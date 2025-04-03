@@ -6,6 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Represents a hockey venue or arena with details such as location and timezone.
+ */
 @Data
 @Entity
 @NoArgsConstructor

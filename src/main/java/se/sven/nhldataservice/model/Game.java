@@ -6,6 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Represents a hockey game with details such as time, teams, venue, and status.
+ */
 @NoArgsConstructor
 @AllArgsConstructor
 @Data

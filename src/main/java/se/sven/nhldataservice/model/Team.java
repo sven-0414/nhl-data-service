@@ -6,6 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Represents a hockey team with its ID, abbreviation, name, and city.
+ */
 @Data
 @Entity
 @NoArgsConstructor
