@@ -7,8 +7,10 @@ import lombok.NoArgsConstructor;
 import java.time.ZonedDateTime;
 
 /**
- * Data Transfer Object for transferring game data from the NHL API.
- * Contains metadata about the game, including time, state, and teams.
+ * Data Transfer Object for transferring basic game data from the NHL API.
+ * Used for listing games on a specific date.
+ *
+ * @author [Sven Eriksson]
  */
 @Data
 @AllArgsConstructor
@@ -16,9 +18,12 @@ import java.time.ZonedDateTime;
 public class GameDTO {
     private long id;
     private int season;
-    private String gameCenterLink;
+    private int homeScore;
+    private int awayScore;
+    private int period;
     private char gameType;
     private char gameState;
+    private String gameCenterLink;
     private ZonedDateTime startTimeUTC;
     private TeamDTO homeTeam;
     private TeamDTO awayTeam;

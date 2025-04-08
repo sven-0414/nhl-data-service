@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 /**
  * Data Transfer Object for transferring venue data from the NHL API.
  * Represents the arena where a game is played.
+ *
+ * @author [Sven Eriksson]
  */
 @Data
 @AllArgsConstructor
