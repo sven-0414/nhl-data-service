@@ -3,6 +3,7 @@ package se.sven.nhldataservice.service;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import se.sven.nhldataservice.dto.GameDTO;
 import se.sven.nhldataservice.dto.ScheduleResponseDTO;
 import se.sven.nhldataservice.model.Game;
@@ -11,11 +12,11 @@ import se.sven.nhldataservice.repository.TeamRepository;
 import se.sven.nhldataservice.repository.VenueRepository;
 
 import java.time.LocalDate;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Serviceklass som ansvarar för att hämta NHL-matchdata från ett externt API.
@@ -70,23 +71,27 @@ public class GameService {
      * @param date Datum att importera matcher för
      */
     public Mono<List<Game>> getGamesWithFallback(LocalDate date) {
-        List<Game> gamesInDb = gameRepository.findAllByNhlGameDate(date);
+        return Mono.fromCallable(() -> {
+            List<Game> gamesInDb = gameRepository.findAllByNhlGameDate(date);
 
-        if (!gamesInDb.isEmpty()) {
-            return Mono.just(gamesInDb);
-        }
+            if (!gamesInDb.isEmpty()) {
+                return gamesInDb;
+            }
 
-        return fetchGamesAsDto(date)
-                .map(dtos -> {
-                    List<Game> saved = new ArrayList<>();
-                    for (GameDTO dto : dtos) {
-                        Game game = new Game(dto, date); // 🔹 spara med NHL-datumet
-                        teamRepository.save(game.getHomeTeam());
-                        teamRepository.save(game.getAwayTeam());
-                        venueRepository.save(game.getVenue());
-                        saved.add(gameRepository.save(game));
-                    }
-                    return saved;
-                });
+            // Hämtar från API och mappar om till Game-objekt
+            List<GameDTO> dtos = Optional.ofNullable(fetchGamesAsDto(date).block())
+                    .orElse(Collections.emptyList());
+            List<Game> saved = new ArrayList<>();
+
+            for (GameDTO dto : dtos) {
+                Game game = new Game(dto, date);
+                teamRepository.save(game.getHomeTeam());
+                teamRepository.save(game.getAwayTeam());
+                venueRepository.save(game.getVenue());
+                saved.add(gameRepository.save(game));
+            }
+
+            return saved;
+        }).subscribeOn(Schedulers.boundedElastic());
     }
 }
