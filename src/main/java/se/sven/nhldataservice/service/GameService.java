@@ -11,7 +11,10 @@ import se.sven.nhldataservice.repository.TeamRepository;
 import se.sven.nhldataservice.repository.VenueRepository;
 
 import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -66,16 +69,24 @@ public class GameService {
      *
      * @param date Datum att importera matcher för
      */
-    public void importAndSaveGames(LocalDate date) {
-        fetchGamesAsDto(date).subscribe(gameDTOs -> {
-            for (GameDTO dto : gameDTOs) {
-                Game game = new Game(dto);
+    public Mono<List<Game>> getGamesWithFallback(LocalDate date) {
+        List<Game> gamesInDb = gameRepository.findAllByNhlGameDate(date);
 
-                teamRepository.save(game.getHomeTeam());
-                teamRepository.save(game.getAwayTeam());
-                venueRepository.save(game.getVenue());
-                gameRepository.save(game);
-            }
-        });
+        if (!gamesInDb.isEmpty()) {
+            return Mono.just(gamesInDb);
+        }
+
+        return fetchGamesAsDto(date)
+                .map(dtos -> {
+                    List<Game> saved = new ArrayList<>();
+                    for (GameDTO dto : dtos) {
+                        Game game = new Game(dto, date); // 🔹 spara med NHL-datumet
+                        teamRepository.save(game.getHomeTeam());
+                        teamRepository.save(game.getAwayTeam());
+                        venueRepository.save(game.getVenue());
+                        saved.add(gameRepository.save(game));
+                    }
+                    return saved;
+                });
     }
 }

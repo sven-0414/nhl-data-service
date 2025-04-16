@@ -1,14 +1,16 @@
 package se.sven.nhldataservice.controller;
 
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
+import se.sven.nhldataservice.model.Game;
 import se.sven.nhldataservice.service.GameService;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
- * REST-kontroller för att hantera NHL-matcher.
- * Här kan man trigga import av matcher från NHL:s API.
+ * REST-kontroller för att hämta NHL-matcher.
+ * Hämtar från databasen om data finns, annars från NHL:s API och sparar.
  */
 @RestController
 @RequestMapping("/api/games")
@@ -21,15 +23,15 @@ public class GameController {
     }
 
     /**
-     * Importerar och sparar matcher för ett specifikt datum från NHL:s API.
+     * Hämtar matcher för ett visst datum.
+     * Om matcherna inte finns i databasen hämtas de från NHL:s API och sparas.
      *
-     * @param date Datum i formatet YYYY-MM-DD
-     * @return OK-svar när importen påbörjats
+     * @param date Datum i format YYYY-MM-DD
+     * @return Lista med matcher i JSON-format
      */
-    @PostMapping("/import/{date}")
-    public ResponseEntity<String> importGames(@PathVariable String date) {
-        LocalDate localDate = LocalDate.parse(date); // Enkelt format, t.ex. 2025-04-14
-        gameService.importAndSaveGames(localDate);
-        return ResponseEntity.ok("Import påbörjad för " + date);
+    @GetMapping("/{date}")
+    public Mono<List<Game>> getGames(@PathVariable String date) {
+        LocalDate localDate = LocalDate.parse(date);
+        return gameService.getGamesWithFallback(localDate);
     }
 }

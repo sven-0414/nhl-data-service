@@ -1,6 +1,8 @@
 package se.sven.nhldataservice.model;
 
 import jakarta.persistence.*;
+
+import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -22,6 +24,7 @@ public class Game {
     private char gameType;
     private char gameState;
     private ZonedDateTime startTimeUTC;
+    private LocalDate nhlGameDate;
     @ManyToOne
     private Team homeTeam;
     @ManyToOne
@@ -35,7 +38,7 @@ public class Game {
      *
      * @param dto Data Transfer Object som innehåller matchinformation.
      */
-    public Game(GameDTO dto) {
+    public Game(GameDTO dto, LocalDate nhlDate) {
         this.id = dto.getId();
         this.season = dto.getSeason();
         this.gameCenterLink = dto.getGameCenterLink();
@@ -45,6 +48,6 @@ public class Game {
         this.homeTeam = new Team(dto.getHomeTeam());
         this.awayTeam = new Team(dto.getAwayTeam());
         this.venue = new Venue(dto.getVenue());
+        this.nhlGameDate = nhlDate; // 🔹 viktigt
     }
-
 }
