@@ -1,6 +1,5 @@
 package se.sven.nhldataservice.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -42,33 +41,6 @@ public class GameService {
         this.gameRepository = gameRepository;
         this.teamRepository = teamRepository;
         this.venueRepository = venueRepository;
-    }
-
-    /**
-     * Hämtar matchdata för ett specifikt datum från NHL:s schema-API.
-     * Datumet formatteras enligt ISO 8601 (yyyy-MM-dd).
-     *
-     * @param date Datum att hämta matcher för.
-     * @return Ett Mono som innehåller svaret från API:et som en JSON-sträng.
-     */
-    public Mono<String> fetchGamesForDate(LocalDate date) {
-        String formattedDate = date.format(DateTimeFormatter.ISO_DATE);
-        return webClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .queryParam("startDate", formattedDate)
-                        .queryParam("endDate", formattedDate)
-                        .build())
-                .retrieve()
-                .bodyToMono(String.class);
-    }
-
-    /**
-     * Hämtar matchdata för dagens datum.
-     *
-     * @return Ett Mono som innehåller dagens matcher i form av en JSON-sträng.
-     */
-    public Mono<String> fetchGamesToday() {
-        return fetchGamesForDate(LocalDate.now());
     }
 
     /**
