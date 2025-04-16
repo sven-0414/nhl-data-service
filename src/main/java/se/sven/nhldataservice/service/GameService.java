@@ -1,10 +1,15 @@
 package se.sven.nhldataservice.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import se.sven.nhldataservice.dto.GameDTO;
 import se.sven.nhldataservice.dto.ScheduleResponseDTO;
+import se.sven.nhldataservice.model.Game;
+import se.sven.nhldataservice.repository.GameRepository;
+import se.sven.nhldataservice.repository.TeamRepository;
+import se.sven.nhldataservice.repository.VenueRepository;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -16,6 +21,15 @@ import java.util.List;
  */
 @Service
 public class GameService {
+
+    @Autowired
+    private GameRepository gameRepository;
+
+    @Autowired
+    private TeamRepository teamRepository;
+
+    @Autowired
+    private VenueRepository venueRepository;
 
     private final WebClient webClient;
     private static final String BASE_URL = "https://api-web.nhle.com/v1/schedule";
@@ -71,5 +85,23 @@ public class GameService {
                 .retrieve()
                 .bodyToMono(ScheduleResponseDTO.class)
                 .map(ScheduleResponseDTO::getGames);
+    }
+
+    /**
+     * Hämtar matcher för ett datum, mappar till entiteter och sparar i databasen.
+     *
+     * @param date Datum att importera matcher för
+     */
+    public void importAndSaveGames(LocalDate date) {
+        fetchGamesAsDto(date).subscribe(gameDTOs -> {
+            for (GameDTO dto : gameDTOs) {
+                Game game = new Game(dto);
+
+                teamRepository.save(game.getHomeTeam());
+                teamRepository.save(game.getAwayTeam());
+                venueRepository.save(game.getVenue());
+                gameRepository.save(game);
+            }
+        });
     }
 }
