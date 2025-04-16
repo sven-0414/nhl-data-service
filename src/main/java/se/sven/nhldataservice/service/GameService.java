@@ -22,25 +22,26 @@ import java.util.List;
 @Service
 public class GameService {
 
-    @Autowired
-    private GameRepository gameRepository;
-
-    @Autowired
-    private TeamRepository teamRepository;
-
-    @Autowired
-    private VenueRepository venueRepository;
-
+    private final GameRepository gameRepository;
+    private final TeamRepository teamRepository;
+    private final VenueRepository venueRepository;
     private final WebClient webClient;
+
     private static final String BASE_URL = "https://api-web.nhle.com/v1/schedule";
 
-/**
- * Konstruktor som bygger en WebClient instans med grund-URL för NHL:s schema-API.
- *
- * @param webClientBuilder WebClient. Builder som injiceras av Spring.
- */
-    public GameService(WebClient.Builder webClientBuilder) {
+    /**
+     * Konstruktor som bygger en WebClient instans med grund-URL för NHL:s schema-API.
+     *
+     * @param webClientBuilder WebClient. Builder som injiceras av Spring.
+     */
+    public GameService(WebClient.Builder webClientBuilder,
+                       GameRepository gameRepository,
+                       TeamRepository teamRepository,
+                       VenueRepository venueRepository) {
         this.webClient = webClientBuilder.baseUrl(BASE_URL).build();
+        this.gameRepository = gameRepository;
+        this.teamRepository = teamRepository;
+        this.venueRepository = venueRepository;
     }
 
     /**
@@ -69,6 +70,7 @@ public class GameService {
     public Mono<String> fetchGamesToday() {
         return fetchGamesForDate(LocalDate.now());
     }
+
     /**
      * Hämtar matchdata för ett specifikt datum och konverterar svaret till en array av GameDTO.
      *
