@@ -1,5 +1,6 @@
 package se.sven.nhldataservice.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 import se.sven.nhldataservice.model.Game;
@@ -10,17 +11,14 @@ import java.util.List;
 
 /**
  * REST-kontroller för att hämta NHL-matcher.
- * Hämtar från databasen om data finns, annars från NHL:s API och sparar.
+ * Hämtar från databasen om data finns, annars från NHL:s API och returnerar en JSON.
  */
 @RestController
 @RequestMapping("/api/games")
+@RequiredArgsConstructor
 public class GameController {
 
     private final GameService gameService;
-
-    public GameController(GameService gameService) {
-        this.gameService = gameService;
-    }
 
     /**
      * Hämtar matcher för ett visst datum.
