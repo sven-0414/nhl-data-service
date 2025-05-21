@@ -1,7 +1,7 @@
 package se.sven.nhldataservice.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import lombok.AllArgsConstructor;
@@ -21,15 +21,21 @@ public class Game {
     private long id;
     private int season;
     private String gameCenterLink;
-    private char gameType;
-    private char gameState;
+    private Character gameType;
+    private Character gameState;
+    private int period;
     private ZonedDateTime startTimeUTC;
     private LocalDate nhlGameDate;
+    private int homeScore;
+    private int awayScore;
     @ManyToOne
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Team homeTeam;
     @ManyToOne
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Team awayTeam;
     @ManyToOne
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Venue venue;
 
     /**
@@ -38,16 +44,16 @@ public class Game {
      *
      * @param dto Data Transfer Object som innehåller matchinformation.
      */
-    public Game(GameDTO dto, LocalDate nhlDate) {
+
+    public Game(GameDTO dto, ZonedDateTime startTimeUTC) {
         this.id = dto.getId();
         this.season = dto.getSeason();
-        this.gameCenterLink = dto.getGameCenterLink();
-        this.gameType = dto.getGameType();
-        this.gameState = dto.getGameState();
-        this.startTimeUTC = dto.getStartTimeUTC();
         this.homeTeam = new Team(dto.getHomeTeam());
         this.awayTeam = new Team(dto.getAwayTeam());
         this.venue = new Venue(dto.getVenue());
-        this.nhlGameDate = nhlDate; // 🔹 viktigt
+        this.nhlGameDate = startTimeUTC.toLocalDate(); // eller som du föredrar
+        this.homeScore = dto.getHomeScore();
+        this.awayScore = dto.getAwayScore();
+        this.gameState = dto.getGameState();
     }
 }

@@ -21,8 +21,8 @@ public class GameDTO {
     private int homeScore;
     private int awayScore;
     private int period;
-    private char gameType;
-    private char gameState;
+    private Character gameType;
+    private Character gameState;
     private String gameCenterLink;
     private ZonedDateTime startTimeUTC;
     private TeamDTO homeTeam;

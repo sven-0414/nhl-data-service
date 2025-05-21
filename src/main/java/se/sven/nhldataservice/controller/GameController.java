@@ -3,7 +3,7 @@ package se.sven.nhldataservice.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
-import se.sven.nhldataservice.model.Game;
+import se.sven.nhldataservice.dto.GameDTO;
 import se.sven.nhldataservice.service.GameService;
 
 import java.time.LocalDate;
@@ -28,8 +28,8 @@ public class GameController {
      * @return Lista med matcher i JSON-format
      */
     @GetMapping("/{date}")
-    public Mono<List<Game>> getGames(@PathVariable String date) {
+    public Mono<List<GameDTO>> getGames(@PathVariable String date) {
         LocalDate localDate = LocalDate.parse(date);
-        return gameService.getGamesWithFallback(localDate);
+        return gameService.getGamesDtoWithFallback(localDate);
     }
 }

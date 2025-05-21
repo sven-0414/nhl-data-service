@@ -6,13 +6,18 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import se.sven.nhldataservice.dto.GameDTO;
 import se.sven.nhldataservice.dto.ScheduleResponseDTO;
+import se.sven.nhldataservice.dto.TeamDTO;
+import se.sven.nhldataservice.dto.VenueDTO;
 import se.sven.nhldataservice.model.Game;
+import se.sven.nhldataservice.model.Team;
+import se.sven.nhldataservice.model.Venue;
 import se.sven.nhldataservice.repository.GameRepository;
 import se.sven.nhldataservice.repository.TeamRepository;
 import se.sven.nhldataservice.repository.VenueRepository;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -66,6 +71,19 @@ public class GameService {
                 .onStatus(status -> status.value() == 404,
                         response -> Mono.error(new RuntimeException("Inga matcher hittades.")))
                 .bodyToMono(ScheduleResponseDTO.class)
+                .doOnNext(dto -> {
+                    System.out.println("⬇️ NHL ScheduleResponseDTO:");
+                    System.out.println(dto);
+                    if (dto == null) {
+                        System.out.println("⚠️ dto är null!");
+                    } else if (dto.getGames() == null) {
+                        System.out.println("⚠️ dto.getGames() är null!");
+                    } else if (dto.getGames().isEmpty()) {
+                        System.out.println("⚠️ dto.getGames() är tom!");
+                    } else {
+                        System.out.println("✅ Antal matcher: " + dto.getGames().size());
+                    }
+                })
                 .timeout(Duration.ofSeconds(5))
                 .map(ScheduleResponseDTO::getGames)
                 .onErrorResume(error -> Mono.just(Collections.emptyList()));
@@ -89,8 +107,8 @@ public class GameService {
                             .flatMap(dtos -> Mono.fromCallable(() -> {
                                 List<Game> saved = new ArrayList<>();
                                 for (GameDTO dto : dtos) {
-                                    Game game = new Game(dto, date);
-                                    teamRepository.save(game.getHomeTeam());
+                                    ZonedDateTime startTime = dto.getStartTimeUTC(); // extrahera från DTO
+                                    Game game = new Game(dto, startTime);
                                     teamRepository.save(game.getAwayTeam());
                                     venueRepository.save(game.getVenue());
                                     saved.add(gameRepository.save(game));
@@ -98,5 +116,49 @@ public class GameService {
                                 return saved;
                             }).subscribeOn(Schedulers.boundedElastic()));
                 });
+    }
+
+    public Mono<List<GameDTO>> getGamesDtoWithFallback(LocalDate localDate) {
+        return getGamesWithFallback(localDate)
+                .map(games -> games.stream()
+                        .map(this::mapToDTO)
+                        .toList());
+    }
+
+    private GameDTO mapToDTO(Game game) {
+        return new GameDTO(
+                game.getId(),
+                game.getSeason(),
+                game.getHomeScore(),
+                game.getAwayScore(),
+                game.getPeriod(),
+                game.getGameType(),
+                game.getGameState(),
+                game.getGameCenterLink(),
+                game.getStartTimeUTC(),
+                mapTeamToDTO(game.getHomeTeam()),
+                mapTeamToDTO(game.getAwayTeam()),
+                mapVenueToDTO(game.getVenue())
+        );
+    }
+
+    private TeamDTO mapTeamToDTO(Team team) {
+        TeamDTO dto = new TeamDTO();
+        dto.setId(team.getId());
+        dto.setAbbrev(team.getAbbrev()); // modellen heter "abbreviation", DTO "abbrev"
+        dto.setName(team.getName());
+        dto.setCity(team.getCity());
+        return dto;
+    }
+
+    private VenueDTO mapVenueToDTO(Venue venue) {
+        VenueDTO dto = new VenueDTO();
+        dto.setId(venue.getId());
+        dto.setName(venue.getName());
+        dto.setCity(venue.getCity());
+        dto.setState(venue.getState());
+        dto.setCountry(venue.getCountry());
+        dto.setVenueTimezone(venue.getVenueTimezone());
+        return dto;
     }
 }
