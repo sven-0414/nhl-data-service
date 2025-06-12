@@ -3,29 +3,30 @@ package se.sven.nhldataservice.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.time.ZonedDateTime;
 
-/**
- * Data Transfer Object for transferring basic game data from the NHL API.
- * Used for listing games on a specific date.
- *
- * @author [Sven Eriksson]
- */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class GameDTO {
     private long id;
     private int season;
-    private int homeScore;
-    private int awayScore;
-    private int period;
-    private Character gameType;
-    private Character gameState;
-    private String gameCenterLink;
+    private int gameType;
+    private String gameDate;
+    private LocalizedNameDTO venue;
+    private String neutralSite;
     private ZonedDateTime startTimeUTC;
-    private TeamDTO homeTeam;
+    private String easternUTCOffset;
+    private String venueUTCOffset;
+    private String venueTimezone;
+    private String gameState;
+    private String gameScheduleState;
     private TeamDTO awayTeam;
-    private VenueDTO venue;
+    private TeamDTO homeTeam;
+    private PeriodDescriptorDTO periodDescriptor;
+    private GameOutcomeDTO gameOutcome;
+    private WinnerDTO winnerByPeriod;
+    private WinnerDTO winnerByGameOutcome;
+    private String gameCenterLink;
+    private ClockDTO clock;
 }

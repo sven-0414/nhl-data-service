@@ -4,18 +4,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Data Transfer Object for transferring team data from the NHL API.
- * Represents either a home or away team in a game.
- *
- * @author [Sven Eriksson]
- */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class TeamDTO {
     private Long id;
     private String abbrev;
-    private String name;
-    private String city;
+    private String logo;
+    private LocalizedNameDTO placeName;
+    private LocalizedNameDTO name;
+    private int score;
 }

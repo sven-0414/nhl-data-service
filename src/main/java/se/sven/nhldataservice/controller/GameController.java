@@ -1,8 +1,9 @@
 package se.sven.nhldataservice.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Mono;
 import se.sven.nhldataservice.dto.GameDTO;
 import se.sven.nhldataservice.service.GameService;
 
@@ -28,8 +29,15 @@ public class GameController {
      * @return Lista med matcher i JSON-format
      */
     @GetMapping("/{date}")
-    public Mono<List<GameDTO>> getGames(@PathVariable String date) {
-        LocalDate localDate = LocalDate.parse(date);
-        return gameService.getGamesDtoWithFallback(localDate);
+    public ResponseEntity<List<GameDTO>> getGames(
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+
+        List<GameDTO> games = gameService.getGamesDtoWithFallback(date);
+
+        if (games.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        return ResponseEntity.ok(games);
     }
 }

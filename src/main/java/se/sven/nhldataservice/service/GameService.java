@@ -1,164 +1,244 @@
 package se.sven.nhldataservice.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
-import se.sven.nhldataservice.dto.GameDTO;
-import se.sven.nhldataservice.dto.ScheduleResponseDTO;
-import se.sven.nhldataservice.dto.TeamDTO;
-import se.sven.nhldataservice.dto.VenueDTO;
-import se.sven.nhldataservice.model.Game;
-import se.sven.nhldataservice.model.Team;
-import se.sven.nhldataservice.model.Venue;
-import se.sven.nhldataservice.repository.GameRepository;
-import se.sven.nhldataservice.repository.TeamRepository;
-import se.sven.nhldataservice.repository.VenueRepository;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClientException;
+import se.sven.nhldataservice.dto.*;
+import se.sven.nhldataservice.model.*;
+import se.sven.nhldataservice.repository.*;
 
-import java.time.Duration;
 import java.time.LocalDate;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
-/**
- * Serviceklass som ansvarar för att hämta NHL-matchdata från ett externt API.
- * Använder WebClient för att göra asynkrona HTTP-anrop till NHL:s schema-API.
- */
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class GameService {
 
     private final GameRepository gameRepository;
     private final TeamRepository teamRepository;
-    private final VenueRepository venueRepository;
-    private final WebClient webClient;
+    private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
 
-    private static final String BASE_URL = "https://api-web.nhle.com/v1/schedule";
+    private static final String BASE_URL = "https://api-web.nhle.com";
 
     /**
-     * Konstruktor som bygger en WebClient instans med grund-URL för NHL:s schema-API.
-     *
-     * @param webClientBuilder WebClient. Builder som injiceras av Spring.
+     * Hämtar matcher för ett datum - returnerar DTOs direkt från API eller konverterar från databas
      */
-    public GameService(WebClient.Builder webClientBuilder,
-                       GameRepository gameRepository,
-                       TeamRepository teamRepository,
-                       VenueRepository venueRepository) {
-        this.webClient = webClientBuilder.baseUrl(BASE_URL).build();
-        this.gameRepository = gameRepository;
-        this.teamRepository = teamRepository;
-        this.venueRepository = venueRepository;
+    public List<GameDTO> getGamesDtoWithFallback(LocalDate date) {
+        // Kolla först i databasen
+        List<Game> gamesInDb = gameRepository.findAllByNhlGameDate(date);
+
+        if (!gamesInDb.isEmpty()) {
+            // Konvertera från databas till DTO
+            List<GameDTO> dtos = gamesInDb.stream()
+                    .map(this::mapGameToDTO)
+                    .collect(Collectors.toList());
+            log.info("📋 Returnerar {} matcher från databas för {}", dtos.size(), date);
+            return dtos;
+        }
+
+        // Hämta från API och spara i databas
+        List<GameDTO> dtos = fetchGamesFromApi(date);
+        if (!dtos.isEmpty()) {
+            saveGamesDtoToDB(dtos);
+            log.info("💾 Sparade {} matcher i databas för {}", dtos.size(), date);
+        }
+
+        return dtos;
     }
 
     /**
-     * Hämtar matchdata för ett specifikt datum och konverterar svaret till en array av GameDTO.
-     *
-     * @param date Datum att hämta matcher för.
-     * @return Ett Mono som innehåller en array av GameDTO.
+     * Hämtar matcher från NHL API och returnerar som DTOs
      */
-    public Mono<List<GameDTO>> fetchGamesAsDto(LocalDate date) {
+    private List<GameDTO> fetchGamesFromApi(LocalDate date) {
         String formattedDate = date.format(DateTimeFormatter.ISO_DATE);
+        String url = BASE_URL + "/v1/schedule/" + formattedDate;
 
-        return webClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path("") // 🔹 Behåll baseUrl, lägg bara till query params
-                        .queryParam("startDate", formattedDate)
-                        .queryParam("endDate", formattedDate)
-                        .build())
-                .retrieve()
-                .onStatus(status -> status.value() == 404,
-                        response -> Mono.error(new RuntimeException("Inga matcher hittades.")))
-                .bodyToMono(ScheduleResponseDTO.class)
-                .doOnNext(dto -> {
-                    System.out.println("⬇️ NHL ScheduleResponseDTO:");
-                    System.out.println(dto);
-                    if (dto == null) {
-                        System.out.println("⚠️ dto är null!");
-                    } else if (dto.getGames() == null) {
-                        System.out.println("⚠️ dto.getGames() är null!");
-                    } else if (dto.getGames().isEmpty()) {
-                        System.out.println("⚠️ dto.getGames() är tom!");
-                    } else {
-                        System.out.println("✅ Antal matcher: " + dto.getGames().size());
-                    }
-                })
-                .timeout(Duration.ofSeconds(5))
-                .map(ScheduleResponseDTO::getGames)
-                .onErrorResume(error -> Mono.just(Collections.emptyList()));
+        log.info("🌐 Anropar NHL API: {}", url);
+
+        try {
+            String jsonResponse = restTemplate.getForObject(url, String.class);
+            return parseJsonToGameDTOs(jsonResponse);
+        } catch (RestClientException e) {
+            log.error("❌ Fel vid API-anrop: {}", e.getMessage());
+            return Collections.emptyList();
+        }
     }
 
     /**
-     * Hämtar matcher för ett datum, mappar till entiteter och sparar i databasen.
-     *
-     * @param date Datum att importera matcher för
+     * Parsar JSON-svar från NHL API till GameDTO-lista
      */
-    public Mono<List<Game>> getGamesWithFallback(LocalDate date) {
-        return Mono.fromCallable(() -> gameRepository.findAllByNhlGameDate(date))
-                .subscribeOn(Schedulers.boundedElastic())
-                .flatMap(gamesInDb -> {
-                    if (!gamesInDb.isEmpty()) {
-                        return Mono.just(gamesInDb);
+    private List<GameDTO> parseJsonToGameDTOs(String json) {
+        try {
+            log.debug("📄 Bearbetar JSON-svar (första 200 tecken): {}",
+                    json.length() > 200 ? json.substring(0, 200) + "..." : json);
+
+            ScheduleResponseDTO scheduleResponse = objectMapper.readValue(json, ScheduleResponseDTO.class);
+
+            List<GameDTO> allGames = new ArrayList<>();
+            if (scheduleResponse.getGameWeek() != null) {
+                for (GameWeekDTO week : scheduleResponse.getGameWeek()) {
+                    if (week.getGames() != null) {
+                        allGames.addAll(week.getGames());
                     }
+                }
+            }
 
-                    // Hämta från NHL:s API – OBS! detta är redan ett Mono<List<GameDTO>>
-                    return fetchGamesAsDto(date)
-                            .flatMap(dtos -> Mono.fromCallable(() -> {
-                                List<Game> saved = new ArrayList<>();
-                                for (GameDTO dto : dtos) {
-                                    ZonedDateTime startTime = dto.getStartTimeUTC(); // extrahera från DTO
-                                    Game game = new Game(dto, startTime);
-                                    teamRepository.save(game.getAwayTeam());
-                                    venueRepository.save(game.getVenue());
-                                    saved.add(gameRepository.save(game));
-                                }
-                                return saved;
-                            }).subscribeOn(Schedulers.boundedElastic()));
-                });
+            log.info("✅ Hittade {} matcher från API", allGames.size());
+            return allGames;
+
+        } catch (Exception e) {
+            log.error("❌ JSON-parsning misslyckades: {}", e.getMessage());
+            e.printStackTrace();
+            return Collections.emptyList();
+        }
     }
 
-    public Mono<List<GameDTO>> getGamesDtoWithFallback(LocalDate localDate) {
-        return getGamesWithFallback(localDate)
-                .map(games -> games.stream()
-                        .map(this::mapToDTO)
-                        .toList());
+    /**
+     * Sparar GameDTOs som Game-entiteter i databasen
+     */
+    @Transactional
+    private void saveGamesDtoToDB(List<GameDTO> dtos) {
+        for (GameDTO dto : dtos) {
+            Game game = new Game(dto);
+
+            // Hantera teams separat för att undvika duplicering
+            if (game.getHomeTeam() != null) {
+                Team homeTeam = saveOrGetTeam(game.getHomeTeam());
+                game.setHomeTeam(homeTeam);
+            }
+            if (game.getAwayTeam() != null) {
+                Team awayTeam = saveOrGetTeam(game.getAwayTeam());
+                game.setAwayTeam(awayTeam);
+            }
+
+            gameRepository.save(game);
+        }
     }
 
-    private GameDTO mapToDTO(Game game) {
-        return new GameDTO(
-                game.getId(),
-                game.getSeason(),
-                game.getHomeScore(),
-                game.getAwayScore(),
-                game.getPeriod(),
-                game.getGameType(),
-                game.getGameState(),
-                game.getGameCenterLink(),
-                game.getStartTimeUTC(),
-                mapTeamToDTO(game.getHomeTeam()),
-                mapTeamToDTO(game.getAwayTeam()),
-                mapVenueToDTO(game.getVenue())
-        );
+    /**
+     * Sparar eller hämtar existerande team från databasen
+     */
+    private Team saveOrGetTeam(Team team) {
+        return teamRepository.findById(team.getId())
+                .orElseGet(() -> teamRepository.save(team));
     }
 
-    private TeamDTO mapTeamToDTO(Team team) {
-        TeamDTO dto = new TeamDTO();
-        dto.setId(team.getId());
-        dto.setAbbrev(team.getAbbrev()); // modellen heter "abbreviation", DTO "abbrev"
-        dto.setName(team.getName());
-        dto.setCity(team.getCity());
+    /**
+     * Konverterar Game-entitet till GameDTO för API-respons
+     */
+    private GameDTO mapGameToDTO(Game game) {
+        GameDTO dto = new GameDTO();
+
+        // Grundläggande matchdata
+        dto.setId(game.getId());
+        dto.setSeason(game.getSeason());
+        dto.setGameType(game.getGameType());
+        dto.setGameDate(game.getGameDate());
+        dto.setNeutralSite(game.getNeutralSite());
+        dto.setStartTimeUTC(game.getStartTimeUTC());
+        dto.setEasternUTCOffset(game.getEasternUTCOffset());
+        dto.setVenueUTCOffset(game.getVenueUTCOffset());
+        dto.setVenueTimezone(game.getVenueTimezone());
+        dto.setGameState(game.getGameState());
+        dto.setGameScheduleState(game.getGameScheduleState());
+        dto.setGameCenterLink(game.getGameCenterLink());
+
+        // Venue som LocalizedNameDTO
+        if (game.getVenue() != null) {
+            LocalizedNameDTO venue = new LocalizedNameDTO();
+            venue.setDefaultValue(game.getVenue());
+            dto.setVenue(venue);
+        }
+
+        // Teams med score
+        dto.setHomeTeam(mapTeamToDTO(game.getHomeTeam(), game.getHomeScore()));
+        dto.setAwayTeam(mapTeamToDTO(game.getAwayTeam(), game.getAwayScore()));
+
+        // PeriodDescriptor
+        if (game.getPeriod() > 0 || game.getPeriodType() != null) {
+            PeriodDescriptorDTO periodDescriptor = new PeriodDescriptorDTO();
+            periodDescriptor.setNumber(game.getPeriod());
+            periodDescriptor.setPeriodType(game.getPeriodType());
+            periodDescriptor.setMaxRegulationPeriods(game.getMaxRegulationPeriods());
+            dto.setPeriodDescriptor(periodDescriptor);
+        }
+
+        // GameOutcome
+        if (game.getLastPeriodType() != null || game.getOtPeriods() != null) {
+            GameOutcomeDTO gameOutcome = new GameOutcomeDTO();
+            gameOutcome.setLastPeriodType(game.getLastPeriodType());
+            gameOutcome.setOtPeriods(game.getOtPeriods());
+            dto.setGameOutcome(gameOutcome);
+        }
+
+        // Clock (för live-matcher)
+        if (game.getTimeRemaining() != null || game.getSecondsRemaining() != null) {
+            ClockDTO clock = new ClockDTO();
+            clock.setTimeRemaining(game.getTimeRemaining());
+            clock.setSecondsRemaining(game.getSecondsRemaining());
+            clock.setRunning(game.getClockRunning());
+            clock.setInIntermission(game.getInIntermission());
+            dto.setClock(clock);
+        }
+
+        // WinnerByPeriod
+        if (game.getWinnerByPeriodList() != null || game.getWinnerByPeriodGameOutcome() != null) {
+            WinnerDTO winnerByPeriod = new WinnerDTO();
+            winnerByPeriod.setPeriods(game.getWinnerByPeriodList());
+            winnerByPeriod.setGameOutcome(game.getWinnerByPeriodGameOutcome());
+            dto.setWinnerByPeriod(winnerByPeriod);
+        }
+
+        // WinnerByGameOutcome
+        if (game.getWinnerByGameOutcomePeriods() != null || game.getWinnerByGameOutcomeResult() != null) {
+            WinnerDTO winnerByGameOutcome = new WinnerDTO();
+            winnerByGameOutcome.setPeriods(game.getWinnerByGameOutcomePeriods());
+            winnerByGameOutcome.setGameOutcome(game.getWinnerByGameOutcomeResult());
+            dto.setWinnerByGameOutcome(winnerByGameOutcome);
+        }
+
         return dto;
     }
 
-    private VenueDTO mapVenueToDTO(Venue venue) {
-        VenueDTO dto = new VenueDTO();
-        dto.setId(venue.getId());
-        dto.setName(venue.getName());
-        dto.setCity(venue.getCity());
-        dto.setState(venue.getState());
-        dto.setCountry(venue.getCountry());
-        dto.setVenueTimezone(venue.getVenueTimezone());
+    /**
+     * Konverterar Team-entitet till TeamDTO
+     */
+    private TeamDTO mapTeamToDTO(Team team, int score) {
+        if (team == null) {
+            return null;
+        }
+
+        TeamDTO dto = new TeamDTO();
+        dto.setId(team.getId());
+        dto.setAbbrev(team.getAbbrev());
+        dto.setLogo(team.getLogo());
+        dto.setScore(score);
+
+        // Skapa LocalizedNameDTO för city
+        if (team.getCity() != null) {
+            LocalizedNameDTO placeName = new LocalizedNameDTO();
+            placeName.setDefaultValue(team.getCity());
+            dto.setPlaceName(placeName);
+        }
+
+        // Skapa LocalizedNameDTO för name
+        if (team.getName() != null) {
+            LocalizedNameDTO name = new LocalizedNameDTO();
+            name.setDefaultValue(team.getName());
+            dto.setName(name);
+        }
+
         return dto;
     }
 }
