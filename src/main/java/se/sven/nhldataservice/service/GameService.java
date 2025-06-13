@@ -1,7 +1,6 @@
 package se.sven.nhldataservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +16,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -32,8 +30,9 @@ public class GameService {
     private static final String BASE_URL = "https://api-web.nhle.com";
 
     /**
-     * Hämtar matcher för ett datum - returnerar DTOs direkt från API eller konverterar från databas
+     * Hämtar matcher för ett datum - returnerar DTO:er direkt från API eller konverterar från databas
      */
+    @Transactional
     public List<GameDTO> getGamesDtoWithFallback(LocalDate date) {
         // Kolla först i databasen
         List<Game> gamesInDb = gameRepository.findAllByNhlGameDate(date);
@@ -42,7 +41,7 @@ public class GameService {
             // Konvertera från databas till DTO
             List<GameDTO> dtos = gamesInDb.stream()
                     .map(this::mapGameToDTO)
-                    .collect(Collectors.toList());
+                    .toList();
             log.info("📋 Returnerar {} matcher från databas för {}", dtos.size(), date);
             return dtos;
         }
@@ -58,7 +57,7 @@ public class GameService {
     }
 
     /**
-     * Hämtar matcher från NHL API och returnerar som DTOs
+     * Hämtar matcher från NHL API och returnerar som DTO:er
      */
     private List<GameDTO> fetchGamesFromApi(LocalDate date) {
         String formattedDate = date.format(DateTimeFormatter.ISO_DATE);
@@ -99,7 +98,6 @@ public class GameService {
 
         } catch (Exception e) {
             log.error("❌ JSON-parsning misslyckades: {}", e.getMessage());
-            e.printStackTrace();
             return Collections.emptyList();
         }
     }
@@ -107,8 +105,7 @@ public class GameService {
     /**
      * Sparar GameDTOs som Game-entiteter i databasen
      */
-    @Transactional
-    private void saveGamesDtoToDB(List<GameDTO> dtos) {
+    public void saveGamesDtoToDB(List<GameDTO> dtos) {
         for (GameDTO dto : dtos) {
             Game game = new Game(dto);
 
