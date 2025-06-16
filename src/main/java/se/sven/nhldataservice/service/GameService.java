@@ -1,7 +1,6 @@
 package se.sven.nhldataservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,37 +22,47 @@ import java.util.List;
 public class GameService {
 
     private final GameRepository gameRepository;
-    private final TeamRepository teamRepository;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final GamePersistenceService gamePersistenceService; // För att spara matcher i databasen
 
     private static final String BASE_URL = "https://api-web.nhle.com";
 
     /**
      * Hämtar matcher för ett datum - returnerar DTO:er direkt från API eller konverterar från databas
      */
-    @Transactional
     public List<GameDTO> getGamesDtoWithFallback(LocalDate date) {
-        // Kolla först i databasen
-        List<Game> gamesInDb = gameRepository.findAllByNhlGameDate(date);
+        // Om det är dagens datum - hoppa över cache och gå direkt till API
+        if (!shouldUseCache(date)) {
+            log.info("🔄 Dagens datum - hämtar direkt från API för {}", date);
+        } else {
+            // För andra datum - kolla först i databasen
+            List<Game> gamesInDb = gameRepository.findAllByNhlGameDate(date);
 
-        if (!gamesInDb.isEmpty()) {
-            // Konvertera från databas till DTO
-            List<GameDTO> dtos = gamesInDb.stream()
-                    .map(this::mapGameToDTO)
-                    .toList();
-            log.info("📋 Returnerar {} matcher från databas för {}", dtos.size(), date);
-            return dtos;
+            if (!gamesInDb.isEmpty()) {
+                // Konvertera från databas till DTO
+                List<GameDTO> dtos = gamesInDb.stream()
+                        .map(this::mapGameToDTO)
+                        .toList();
+                log.info("📋 Returnerar {} matcher från databas för {}", dtos.size(), date);
+                return dtos;
+            }
         }
 
-        // Hämta från API och spara i databas
+        // Hämta från API (antingen dagens datum eller cache var tom)
         List<GameDTO> dtos = fetchGamesFromApi(date);
-        if (!dtos.isEmpty()) {
-            saveGamesDtoToDB(dtos);
+
+        // Spara bara om vi ska cacha detta datum
+        if (!dtos.isEmpty() && shouldUseCache(date)) {
+            gamePersistenceService.saveGamesDtoToDB(dtos);
             log.info("💾 Sparade {} matcher i databas för {}", dtos.size(), date);
         }
 
         return dtos;
+    }
+
+    private boolean shouldUseCache(LocalDate date) {
+        return !date.equals(LocalDate.now()); // Cacha inte dagens matcher
     }
 
     /**
@@ -100,35 +109,6 @@ public class GameService {
             log.error("❌ JSON-parsning misslyckades: {}", e.getMessage());
             return Collections.emptyList();
         }
-    }
-
-    /**
-     * Sparar GameDTOs som Game-entiteter i databasen
-     */
-    public void saveGamesDtoToDB(List<GameDTO> dtos) {
-        for (GameDTO dto : dtos) {
-            Game game = new Game(dto);
-
-            // Hantera teams separat för att undvika duplicering
-            if (game.getHomeTeam() != null) {
-                Team homeTeam = saveOrGetTeam(game.getHomeTeam());
-                game.setHomeTeam(homeTeam);
-            }
-            if (game.getAwayTeam() != null) {
-                Team awayTeam = saveOrGetTeam(game.getAwayTeam());
-                game.setAwayTeam(awayTeam);
-            }
-
-            gameRepository.save(game);
-        }
-    }
-
-    /**
-     * Sparar eller hämtar existerande team från databasen
-     */
-    private Team saveOrGetTeam(Team team) {
-        return teamRepository.findById(team.getId())
-                .orElseGet(() -> teamRepository.save(team));
     }
 
     /**
