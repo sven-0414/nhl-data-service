@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -33,44 +32,32 @@ public class Game {
     private int awayScore;
     private int period;
     private String gameCenterLink;
-
-    // GameOutcomeDTO mappning:
     private String otPeriods;
 
-    // ClockDTO mappning:
+    // Clock data for live games (not fully testable during off-season)
     private String timeRemaining;
     private Integer secondsRemaining;
     private Boolean clockRunning;
     private Boolean inIntermission;
-
-    // PeriodDescriptorDTO mappning (utöver period):
     private String periodType;
     private Integer maxRegulationPeriods;
 
-    // WinnerDTO mappning - winnerByPeriod:
-    @CollectionTable(name = "game_winner_periods", joinColumns = @JoinColumn(name = "game_id"))
-    @Column(name = "period_winner")
-    private List<Integer> winnerByPeriodList;
-
-    private Integer winnerByPeriodGameOutcome;
-
-    // WinnerDTO mappning - winnerByGameOutcome:
-    @CollectionTable(name = "game_outcome_periods", joinColumns = @JoinColumn(name = "game_id"))
-    @Column(name = "period_winner")
-    private List<Integer> winnerByGameOutcomePeriods;
-
-    private Integer winnerByGameOutcomeResult;
-
-    @ManyToOne(cascade = CascadeType.MERGE)  // Lägg till cascade
-    @JoinColumn(name = "home_team_id")       // Explicit join column
+    @ManyToOne(cascade = CascadeType.MERGE)
+    @JoinColumn(name = "home_team_id")
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Team homeTeam;
 
-    @ManyToOne(cascade = CascadeType.MERGE)  // Lägg till cascade
-    @JoinColumn(name = "away_team_id")       // Explicit join column
+    @ManyToOne(cascade = CascadeType.MERGE)
+    @JoinColumn(name = "away_team_id")
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Team awayTeam;
 
+    /**
+     * Maps from NHL API's nested DTO structure, handling null values and extracting
+     * data from LocalizedNameDTO objects.
+     *
+     * @param dto NHL API game data
+     */
     public Game(GameDTO dto) {
         this.id = dto.getId();
         this.season = dto.getSeason();
@@ -90,18 +77,15 @@ public class Game {
         this.period = dto.getPeriodDescriptor() != null ? dto.getPeriodDescriptor().getNumber() : 0;
         this.gameCenterLink = dto.getGameCenterLink();
 
-        // Mappa PeriodDescriptor data:
         if (dto.getPeriodDescriptor() != null) {
             this.periodType = dto.getPeriodDescriptor().getPeriodType();
             this.maxRegulationPeriods = dto.getPeriodDescriptor().getMaxRegulationPeriods();
         }
 
-        // Mappa GameOutcome data:
         if (dto.getGameOutcome() != null) {
             this.otPeriods = dto.getGameOutcome().getOtPeriods();
         }
 
-        // Mappa Clock data (för live matcher):
         if (dto.getClock() != null) {
             this.timeRemaining = dto.getClock().getTimeRemaining();
             this.secondsRemaining = dto.getClock().getSecondsRemaining();
@@ -109,7 +93,6 @@ public class Game {
             this.inIntermission = dto.getClock().getInIntermission();
         }
 
-        // Säker mappning av teams:
         if (dto.getHomeTeam() != null) {
             this.homeTeam = new Team(dto.getHomeTeam());
         }

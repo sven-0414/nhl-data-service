@@ -12,8 +12,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * REST-kontroller för att hämta NHL-matcher.
- * Hämtar från databasen om data finns, annars från NHL:s API och returnerar en JSON.
+ * REST controller for NHL games with database caching and API fallback.
  */
 @Slf4j
 @RestController
@@ -27,7 +26,7 @@ public class GameController {
     public ResponseEntity<List<GameDTO>> getGames(
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
 
-        log.info("🎯 Hämtar matcher för datum: {}", date);
+        log.info("🎯 Fetching games for date: {}", date);
 
         List<GameDTO> games = gameService.getGamesDtoWithFallback(date);
 
@@ -36,11 +35,11 @@ public class GameController {
 
     private ResponseEntity<List<GameDTO>> buildResponse(List<GameDTO> games, LocalDate date) {
         if (games.isEmpty()) {
-            log.info("📭 Inga matcher hittades för {}", date);
+            log.info("📭 No games found for {}", date);
             return ResponseEntity.noContent().build();
         }
 
-        log.info("📤 Returnerar {} matcher för {}", games.size(), date);
+        log.info("📤 Returning {} games for {}", games.size(), date);
         return ResponseEntity.ok(games);
     }
 }

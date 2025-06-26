@@ -31,21 +31,32 @@ public class GameService {
     private static final String API_ENDPOINT = "/v1/schedule/";
 
     /**
-     * Hämtar matcher för ett datum - returnerar DTO:er direkt från API eller konverterar från databas
+     * Retrieves NHL games for a given date with intelligent caching strategy.
+     * Uses database cache for historical games, always fetches fresh data for today's games.
+     *
+     * @param date the date to retrieve games for
+     * @return list of games for the specified date
      */
     public List<GameDTO> getGamesDtoWithFallback(LocalDate date) {
         if (shouldFetchFromApi(date)) {
-            log.info("🔄 Hämtar direkt från API för {}", date);
+            log.info("🔄 Fetching directly from API for {}", date);
             return fetchAndCacheGames(date);
         }
 
         return getCachedGamesOrFetchFromApi(date);
     }
 
+    /**
+     * Determines if data should be fetched directly from API instead of cache.
+     * Today's games are always fetched fresh due to changing scores and status.
+     */
     private boolean shouldFetchFromApi(LocalDate date) {
-        return date.equals(LocalDate.now()); // Dagens matcher hämtas alltid från API
+        return date.equals(LocalDate.now());
     }
 
+    /**
+     * Attempts to retrieve games from database cache, falls back to API if not found.
+     */
     private List<GameDTO> getCachedGamesOrFetchFromApi(LocalDate date) {
         List<Game> cachedGames = gameRepository.findAllByNhlGameDate(date);
 
@@ -53,47 +64,54 @@ public class GameService {
             List<GameDTO> dtos = cachedGames.stream()
                     .map(this::mapGameToDTO)
                     .toList();
-            log.info("📋 Returnerar {} matcher från databas för {}", dtos.size(), date);
+            log.info("📋 Returning {} games from database for {}", dtos.size(), date);
             return dtos;
         }
 
         return fetchAndCacheGames(date);
     }
 
+    /**
+     * Fetches games from API and caches them if they're not today's games.
+     */
     private List<GameDTO> fetchAndCacheGames(LocalDate date) {
         List<GameDTO> dtos = fetchGamesFromApi(date);
 
         if (!dtos.isEmpty() && !shouldFetchFromApi(date)) {
             gamePersistenceService.saveGamesDtoToDB(dtos);
-            log.info("💾 Sparade {} matcher i databas för {}", dtos.size(), date);
+            log.info("💾 Saved {} games to database for {}", dtos.size(), date);
         }
 
         return dtos;
     }
 
     /**
-     * Hämtar matcher från NHL API och returnerar som DTO:er
+     * Fetches games from NHL API and returns as DTOs.
      */
     private List<GameDTO> fetchGamesFromApi(LocalDate date) {
         String url = buildApiUrl(date);
-        log.info("🌐 Anropar NHL API: {}", url);
+        log.info("🌐 Calling NHL API: {}", url);
 
         try {
             String jsonResponse = restTemplate.getForObject(url, String.class);
             return parseJsonToGameDTOs(jsonResponse);
         } catch (RestClientException e) {
-            log.error("❌ Fel vid API-anrop: {}", e.getMessage());
+            log.error("❌ Error during API call: {}", e.getMessage());
             return Collections.emptyList();
         }
     }
 
+    /**
+     * Builds the complete NHL API URL for the specified date.
+     */
     private String buildApiUrl(LocalDate date) {
         String formattedDate = date.format(DateTimeFormatter.ISO_DATE);
         return BASE_URL + API_ENDPOINT + formattedDate;
     }
 
     /**
-     * Parsar JSON-svar från NHL API till GameDTO-lista
+     * Parses NHL API JSON response into GameDTO objects.
+     * Handles the nested gameWeek structure from the API.
      */
     private List<GameDTO> parseJsonToGameDTOs(String json) {
         try {
@@ -102,20 +120,23 @@ public class GameService {
             ScheduleResponseDTO scheduleResponse = objectMapper.readValue(json, ScheduleResponseDTO.class);
             List<GameDTO> allGames = extractGamesFromSchedule(scheduleResponse);
 
-            log.info("✅ Hittade {} matcher från API", allGames.size());
+            log.info("✅ Found {} games from API", allGames.size());
             return allGames;
 
         } catch (Exception e) {
-            log.error("❌ JSON-parsning misslyckades: {}", e.getMessage());
+            log.error("❌ JSON parsing failed: {}", e.getMessage());
             return Collections.emptyList();
         }
     }
 
     private void logJsonPreview(String json) {
-        log.debug("📄 Bearbetar JSON-svar (första 200 tecken): {}",
+        log.debug("📄 Processing JSON response (first 200 characters): {}",
                 json.length() > 200 ? json.substring(0, 200) + "..." : json);
     }
 
+    /**
+     * Extracts all games from the NHL API's nested gameWeek structure.
+     */
     private List<GameDTO> extractGamesFromSchedule(ScheduleResponseDTO scheduleResponse) {
         List<GameDTO> allGames = new ArrayList<>();
 
@@ -126,6 +147,9 @@ public class GameService {
         return allGames;
     }
 
+    /**
+     * Adds games from a single week to the master games list, setting the date for each game.
+     */
     private void addGamesFromWeek(GameWeekDTO week, List<GameDTO> allGames) {
         Optional.ofNullable(week.getGames())
                 .ifPresent(games -> games.forEach(game -> {
@@ -135,7 +159,7 @@ public class GameService {
     }
 
     /**
-     * Konverterar Game-entitet till GameDTO för API-respons
+     * Converts database Game entity to API response DTO format.
      */
     private GameDTO mapGameToDTO(Game game) {
         GameDTO dto = new GameDTO();
@@ -150,6 +174,9 @@ public class GameService {
         return dto;
     }
 
+    /**
+     * Maps basic game information from entity to DTO.
+     */
     private void setBasicGameData(GameDTO dto, Game game) {
         dto.setId(game.getId());
         dto.setSeason(game.getSeason());
@@ -165,15 +192,24 @@ public class GameService {
         dto.setGameCenterLink(game.getGameCenterLink());
     }
 
+    /**
+     * Maps venue information, creating LocalizedNameDTO structure expected by API consumers.
+     */
     private void setVenueData(GameDTO dto, Game game) {
         dto.setVenue(createLocalizedNameDTO(game.getVenue()));
     }
 
+    /**
+     * Maps team data including current scores from the game.
+     */
     private void setTeamData(GameDTO dto, Game game) {
         dto.setHomeTeam(mapTeamToDTO(game.getHomeTeam(), game.getHomeScore()));
         dto.setAwayTeam(mapTeamToDTO(game.getAwayTeam(), game.getAwayScore()));
     }
 
+    /**
+     * Maps period information if game has started.
+     */
     private void setPeriodData(GameDTO dto, Game game) {
         if (game.getPeriod() > 0 || game.getPeriodType() != null) {
             PeriodDescriptorDTO periodDescriptor = new PeriodDescriptorDTO();
@@ -184,6 +220,9 @@ public class GameService {
         }
     }
 
+    /**
+     * Maps overtime/shootout outcome data if available.
+     */
     private void setGameOutcomeData(GameDTO dto, Game game) {
         if (game.getOtPeriods() != null) {
             GameOutcomeDTO gameOutcome = new GameOutcomeDTO();
@@ -192,6 +231,9 @@ public class GameService {
         }
     }
 
+    /**
+     * Maps live game clock data if available (for ongoing games).
+     */
     private void setClockData(GameDTO dto, Game game) {
         if (game.getTimeRemaining() != null || game.getSecondsRemaining() != null) {
             ClockDTO clock = new ClockDTO();
@@ -204,7 +246,7 @@ public class GameService {
     }
 
     /**
-     * Konverterar Team-entitet till TeamDTO
+     * Converts Team entity to TeamDTO with score information.
      */
     private TeamDTO mapTeamToDTO(Team team, int score) {
         if (team == null) {
@@ -223,7 +265,8 @@ public class GameService {
     }
 
     /**
-     * Hjälpmetod för att skapa LocalizedNameDTO
+     * Helper method to create LocalizedNameDTO from simple string value.
+     * Returns null if input is null to avoid unnecessary object creation.
      */
     private LocalizedNameDTO createLocalizedNameDTO(String value) {
         if (value == null) {

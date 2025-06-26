@@ -24,18 +24,18 @@ public class GamePersistenceService {
     private final TeamRepository teamRepository;
 
     /**
-     * Sparar GameDTOs som Game-entiteter i databasen
-     * Optimerad version som cachar teams för att minska databasanrop
+     * Saves NHL game data to the database with optimized team handling to avoid duplicate saves.
+     *
+     * @param dtos list of games to persist
      */
     public void saveGamesDtoToDB(List<GameDTO> dtos) {
         if (dtos.isEmpty()) {
-            log.info("📭 Inga matcher att spara");
+            log.info("📭 No games to save");
             return;
         }
 
-        log.info("💾 Börjar spara {} matcher i databas", dtos.size());
+        log.info("💾 Starting to save {} games to database", dtos.size());
 
-        // Cachea teams för att undvika upprepade databasanrop
         Map<Long, Team> teamCache = new HashMap<>();
 
         List<Game> gamesToSave = dtos.stream()
@@ -43,9 +43,12 @@ public class GamePersistenceService {
                 .toList();
 
         gameRepository.saveAll(gamesToSave);
-        log.info("💾 Slutförde sparning av {} matcher", dtos.size());
+        log.info("💾 Completed saving {} games", dtos.size());
     }
 
+    /**
+     * Creates a Game entity from DTO with cached team references to avoid duplicate database calls.
+     */
     private Game createGameWithCachedTeams(GameDTO dto, Map<Long, Team> teamCache) {
         Game game = new Game(dto);
 
@@ -63,8 +66,8 @@ public class GamePersistenceService {
     }
 
     /**
-     * Hämtar team från cache eller sparar/hämtar från databas
-     * Optimerad version som minskar antalet databasanrop
+     * Retrieves team from cache or fetches/saves from the database if not found.
+     * Optimized to reduce database round trips during batch game saves.
      */
     private Team getCachedOrSaveTeam(Team team, Map<Long, Team> teamCache) {
         return teamCache.computeIfAbsent(team.getId(), id ->
@@ -73,9 +76,12 @@ public class GamePersistenceService {
         );
     }
 
+    /**
+     * Persists a new team to database and logs the operation.
+     */
     private Team saveNewTeam(Team team) {
         Team savedTeam = teamRepository.save(team);
-        log.debug("🏒 Sparade nytt team: {} ({})", team.getName(), team.getId());
+        log.debug("🏒 Saved new team: {} ({})", team.getName(), team.getId());
         return savedTeam;
     }
 }
