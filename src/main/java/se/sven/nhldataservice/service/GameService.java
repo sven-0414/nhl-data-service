@@ -15,6 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -24,36 +25,45 @@ public class GameService {
     private final GameRepository gameRepository;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
-    private final GamePersistenceService gamePersistenceService; // För att spara matcher i databasen
+    private final GamePersistenceService gamePersistenceService;
 
     private static final String BASE_URL = "https://api-web.nhle.com";
+    private static final String API_ENDPOINT = "/v1/schedule/";
 
     /**
      * Hämtar matcher för ett datum - returnerar DTO:er direkt från API eller konverterar från databas
      */
     public List<GameDTO> getGamesDtoWithFallback(LocalDate date) {
-        // Om det är dagens datum - hoppa över cache och gå direkt till API
-        if (!shouldUseCache(date)) {
-            log.info("🔄 Dagens datum - hämtar direkt från API för {}", date);
-        } else {
-            // För andra datum - kolla först i databasen
-            List<Game> gamesInDb = gameRepository.findAllByNhlGameDate(date);
-
-            if (!gamesInDb.isEmpty()) {
-                // Konvertera från databas till DTO
-                List<GameDTO> dtos = gamesInDb.stream()
-                        .map(this::mapGameToDTO)
-                        .toList();
-                log.info("📋 Returnerar {} matcher från databas för {}", dtos.size(), date);
-                return dtos;
-            }
+        if (shouldFetchFromApi(date)) {
+            log.info("🔄 Hämtar direkt från API för {}", date);
+            return fetchAndCacheGames(date);
         }
 
-        // Hämta från API (antingen dagens datum eller cache var tom)
+        return getCachedGamesOrFetchFromApi(date);
+    }
+
+    private boolean shouldFetchFromApi(LocalDate date) {
+        return date.equals(LocalDate.now()); // Dagens matcher hämtas alltid från API
+    }
+
+    private List<GameDTO> getCachedGamesOrFetchFromApi(LocalDate date) {
+        List<Game> cachedGames = gameRepository.findAllByNhlGameDate(date);
+
+        if (!cachedGames.isEmpty()) {
+            List<GameDTO> dtos = cachedGames.stream()
+                    .map(this::mapGameToDTO)
+                    .toList();
+            log.info("📋 Returnerar {} matcher från databas för {}", dtos.size(), date);
+            return dtos;
+        }
+
+        return fetchAndCacheGames(date);
+    }
+
+    private List<GameDTO> fetchAndCacheGames(LocalDate date) {
         List<GameDTO> dtos = fetchGamesFromApi(date);
 
-        // Spara bara om vi ska cacha detta datum
-        if (!dtos.isEmpty() && shouldUseCache(date)) {
+        if (!dtos.isEmpty() && !shouldFetchFromApi(date)) {
             gamePersistenceService.saveGamesDtoToDB(dtos);
             log.info("💾 Sparade {} matcher i databas för {}", dtos.size(), date);
         }
@@ -61,17 +71,11 @@ public class GameService {
         return dtos;
     }
 
-    private boolean shouldUseCache(LocalDate date) {
-        return !date.equals(LocalDate.now()); // Cacha inte dagens matcher
-    }
-
     /**
      * Hämtar matcher från NHL API och returnerar som DTO:er
      */
     private List<GameDTO> fetchGamesFromApi(LocalDate date) {
-        String formattedDate = date.format(DateTimeFormatter.ISO_DATE);
-        String url = BASE_URL + "/v1/schedule/" + formattedDate;
-
+        String url = buildApiUrl(date);
         log.info("🌐 Anropar NHL API: {}", url);
 
         try {
@@ -83,24 +87,20 @@ public class GameService {
         }
     }
 
+    private String buildApiUrl(LocalDate date) {
+        String formattedDate = date.format(DateTimeFormatter.ISO_DATE);
+        return BASE_URL + API_ENDPOINT + formattedDate;
+    }
+
     /**
      * Parsar JSON-svar från NHL API till GameDTO-lista
      */
     private List<GameDTO> parseJsonToGameDTOs(String json) {
         try {
-            log.debug("📄 Bearbetar JSON-svar (första 200 tecken): {}",
-                    json.length() > 200 ? json.substring(0, 200) + "..." : json);
+            logJsonPreview(json);
 
             ScheduleResponseDTO scheduleResponse = objectMapper.readValue(json, ScheduleResponseDTO.class);
-
-            List<GameDTO> allGames = new ArrayList<>();
-            if (scheduleResponse.getGameWeek() != null) {
-                for (GameWeekDTO week : scheduleResponse.getGameWeek()) {
-                    if (week.getGames() != null) {
-                        allGames.addAll(week.getGames());
-                    }
-                }
-            }
+            List<GameDTO> allGames = extractGamesFromSchedule(scheduleResponse);
 
             log.info("✅ Hittade {} matcher från API", allGames.size());
             return allGames;
@@ -111,13 +111,46 @@ public class GameService {
         }
     }
 
+    private void logJsonPreview(String json) {
+        log.debug("📄 Bearbetar JSON-svar (första 200 tecken): {}",
+                json.length() > 200 ? json.substring(0, 200) + "..." : json);
+    }
+
+    private List<GameDTO> extractGamesFromSchedule(ScheduleResponseDTO scheduleResponse) {
+        List<GameDTO> allGames = new ArrayList<>();
+
+        Optional.ofNullable(scheduleResponse.getGameWeek())
+                .ifPresent(gameWeeks -> gameWeeks.forEach(week ->
+                        addGamesFromWeek(week, allGames)));
+
+        return allGames;
+    }
+
+    private void addGamesFromWeek(GameWeekDTO week, List<GameDTO> allGames) {
+        Optional.ofNullable(week.getGames())
+                .ifPresent(games -> games.forEach(game -> {
+                    game.setGameDate(week.getDate());
+                    allGames.add(game);
+                }));
+    }
+
     /**
      * Konverterar Game-entitet till GameDTO för API-respons
      */
     private GameDTO mapGameToDTO(Game game) {
         GameDTO dto = new GameDTO();
 
-        // Grundläggande matchdata
+        setBasicGameData(dto, game);
+        setVenueData(dto, game);
+        setTeamData(dto, game);
+        setPeriodData(dto, game);
+        setGameOutcomeData(dto, game);
+        setClockData(dto, game);
+
+        return dto;
+    }
+
+    private void setBasicGameData(GameDTO dto, Game game) {
         dto.setId(game.getId());
         dto.setSeason(game.getSeason());
         dto.setGameType(game.getGameType());
@@ -130,19 +163,18 @@ public class GameService {
         dto.setGameState(game.getGameState());
         dto.setGameScheduleState(game.getGameScheduleState());
         dto.setGameCenterLink(game.getGameCenterLink());
+    }
 
-        // Venue som LocalizedNameDTO
-        if (game.getVenue() != null) {
-            LocalizedNameDTO venue = new LocalizedNameDTO();
-            venue.setDefaultValue(game.getVenue());
-            dto.setVenue(venue);
-        }
+    private void setVenueData(GameDTO dto, Game game) {
+        dto.setVenue(createLocalizedNameDTO(game.getVenue()));
+    }
 
-        // Teams med score
+    private void setTeamData(GameDTO dto, Game game) {
         dto.setHomeTeam(mapTeamToDTO(game.getHomeTeam(), game.getHomeScore()));
         dto.setAwayTeam(mapTeamToDTO(game.getAwayTeam(), game.getAwayScore()));
+    }
 
-        // PeriodDescriptor
+    private void setPeriodData(GameDTO dto, Game game) {
         if (game.getPeriod() > 0 || game.getPeriodType() != null) {
             PeriodDescriptorDTO periodDescriptor = new PeriodDescriptorDTO();
             periodDescriptor.setNumber(game.getPeriod());
@@ -150,16 +182,17 @@ public class GameService {
             periodDescriptor.setMaxRegulationPeriods(game.getMaxRegulationPeriods());
             dto.setPeriodDescriptor(periodDescriptor);
         }
+    }
 
-        // GameOutcome
-        if (game.getLastPeriodType() != null || game.getOtPeriods() != null) {
+    private void setGameOutcomeData(GameDTO dto, Game game) {
+        if (game.getOtPeriods() != null) {
             GameOutcomeDTO gameOutcome = new GameOutcomeDTO();
-            gameOutcome.setLastPeriodType(game.getLastPeriodType());
             gameOutcome.setOtPeriods(game.getOtPeriods());
             dto.setGameOutcome(gameOutcome);
         }
+    }
 
-        // Clock (för live-matcher)
+    private void setClockData(GameDTO dto, Game game) {
         if (game.getTimeRemaining() != null || game.getSecondsRemaining() != null) {
             ClockDTO clock = new ClockDTO();
             clock.setTimeRemaining(game.getTimeRemaining());
@@ -168,24 +201,6 @@ public class GameService {
             clock.setInIntermission(game.getInIntermission());
             dto.setClock(clock);
         }
-
-        // WinnerByPeriod
-        if (game.getWinnerByPeriodList() != null || game.getWinnerByPeriodGameOutcome() != null) {
-            WinnerDTO winnerByPeriod = new WinnerDTO();
-            winnerByPeriod.setPeriods(game.getWinnerByPeriodList());
-            winnerByPeriod.setGameOutcome(game.getWinnerByPeriodGameOutcome());
-            dto.setWinnerByPeriod(winnerByPeriod);
-        }
-
-        // WinnerByGameOutcome
-        if (game.getWinnerByGameOutcomePeriods() != null || game.getWinnerByGameOutcomeResult() != null) {
-            WinnerDTO winnerByGameOutcome = new WinnerDTO();
-            winnerByGameOutcome.setPeriods(game.getWinnerByGameOutcomePeriods());
-            winnerByGameOutcome.setGameOutcome(game.getWinnerByGameOutcomeResult());
-            dto.setWinnerByGameOutcome(winnerByGameOutcome);
-        }
-
-        return dto;
     }
 
     /**
@@ -201,21 +216,22 @@ public class GameService {
         dto.setAbbrev(team.getAbbrev());
         dto.setLogo(team.getLogo());
         dto.setScore(score);
+        dto.setPlaceName(createLocalizedNameDTO(team.getCity()));
+        dto.setName(createLocalizedNameDTO(team.getName()));
 
-        // Skapa LocalizedNameDTO för city
-        if (team.getCity() != null) {
-            LocalizedNameDTO placeName = new LocalizedNameDTO();
-            placeName.setDefaultValue(team.getCity());
-            dto.setPlaceName(placeName);
+        return dto;
+    }
+
+    /**
+     * Hjälpmetod för att skapa LocalizedNameDTO
+     */
+    private LocalizedNameDTO createLocalizedNameDTO(String value) {
+        if (value == null) {
+            return null;
         }
 
-        // Skapa LocalizedNameDTO för name
-        if (team.getName() != null) {
-            LocalizedNameDTO name = new LocalizedNameDTO();
-            name.setDefaultValue(team.getName());
-            dto.setName(name);
-        }
-
+        LocalizedNameDTO dto = new LocalizedNameDTO();
+        dto.setDefaultValue(value);
         return dto;
     }
 }

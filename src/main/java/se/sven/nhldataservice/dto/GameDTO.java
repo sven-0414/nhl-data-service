@@ -25,8 +25,6 @@ public class GameDTO {
     private TeamDTO homeTeam;
     private PeriodDescriptorDTO periodDescriptor;
     private GameOutcomeDTO gameOutcome;
-    private WinnerDTO winnerByPeriod;
-    private WinnerDTO winnerByGameOutcome;
     private String gameCenterLink;
     private ClockDTO clock;
 }

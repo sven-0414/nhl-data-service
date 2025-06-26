@@ -31,6 +31,10 @@ public class GameController {
 
         List<GameDTO> games = gameService.getGamesDtoWithFallback(date);
 
+        return buildResponse(games, date);
+    }
+
+    private ResponseEntity<List<GameDTO>> buildResponse(List<GameDTO> games, LocalDate date) {
         if (games.isEmpty()) {
             log.info("📭 Inga matcher hittades för {}", date);
             return ResponseEntity.noContent().build();

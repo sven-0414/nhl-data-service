@@ -35,7 +35,6 @@ public class Game {
     private String gameCenterLink;
 
     // GameOutcomeDTO mappning:
-    private String lastPeriodType;
     private String otPeriods;
 
     // ClockDTO mappning:
@@ -101,7 +100,6 @@ public class Game {
 
         // Mappa GameOutcome data:
         if (dto.getGameOutcome() != null) {
-            this.lastPeriodType = dto.getGameOutcome().getLastPeriodType();
             this.otPeriods = dto.getGameOutcome().getOtPeriods();
         }
 
@@ -111,18 +109,6 @@ public class Game {
             this.secondsRemaining = dto.getClock().getSecondsRemaining();
             this.clockRunning = dto.getClock().getRunning();
             this.inIntermission = dto.getClock().getInIntermission();
-        }
-
-        // Mappa WinnerDTO - winnerByPeriod:
-        if (dto.getWinnerByPeriod() != null) {
-            this.winnerByPeriodList = dto.getWinnerByPeriod().getPeriods();
-            this.winnerByPeriodGameOutcome = dto.getWinnerByPeriod().getGameOutcome();
-        }
-
-        // Mappa WinnerDTO - winnerByGameOutcome:
-        if (dto.getWinnerByGameOutcome() != null) {
-            this.winnerByGameOutcomePeriods = dto.getWinnerByGameOutcome().getPeriods();
-            this.winnerByGameOutcomeResult = dto.getWinnerByGameOutcome().getGameOutcome();
         }
 
         // Säker mappning av teams:
