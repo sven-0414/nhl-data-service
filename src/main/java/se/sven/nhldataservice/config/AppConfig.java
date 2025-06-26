@@ -13,14 +13,20 @@ import java.time.Duration;
 @Configuration
 public class AppConfig {
 
+    /**
+     * Configures RestTemplate with timeouts optimized for NHL API calls.
+     */
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder) {
         return builder
-                .setConnectTimeout(Duration.ofSeconds(5))
-                .setReadTimeout(Duration.ofSeconds(10))
+                .connectTimeout(Duration.ofSeconds(5))
+                .readTimeout(Duration.ofSeconds(10))
                 .build();
     }
 
+    /**
+     * Configures ObjectMapper to handle NHL API's date formats and ignore unknown properties.
+     */
     @Bean
     public ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
