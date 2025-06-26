@@ -48,7 +48,6 @@ public class Game {
     private Integer maxRegulationPeriods;
 
     // WinnerDTO mappning - winnerByPeriod:
-    @ElementCollection
     @CollectionTable(name = "game_winner_periods", joinColumns = @JoinColumn(name = "game_id"))
     @Column(name = "period_winner")
     private List<Integer> winnerByPeriodList;
@@ -56,7 +55,6 @@ public class Game {
     private Integer winnerByPeriodGameOutcome;
 
     // WinnerDTO mappning - winnerByGameOutcome:
-    @ElementCollection
     @CollectionTable(name = "game_outcome_periods", joinColumns = @JoinColumn(name = "game_id"))
     @Column(name = "period_winner")
     private List<Integer> winnerByGameOutcomePeriods;
