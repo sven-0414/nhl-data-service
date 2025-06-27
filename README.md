@@ -1,6 +1,6 @@
 # NHL Data Service
 
-A Spring Boot REST API that fetches NHL game data with database caching and real-time updates.
+A Spring Boot REST API that fetches NHL game data with database caching and Fresh Data updates.
 
 ![Java](https://img.shields.io/badge/Java-21-orange)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.4-green)
@@ -10,7 +10,7 @@ A Spring Boot REST API that fetches NHL game data with database caching and real
 ## 🏒 Features
 
 - **Caching Strategy**: Historical games cached in database, live games fetched fresh
-- **Real-time Data**: Always current scores and game status for today's matches
+- **Fresh Data**: Always current scores and game status for today's matches
 - **Clean JSON API**: Simplified response format without betting/broadcast data
 
 ## 🚀 Quick Start
@@ -42,7 +42,7 @@ A Spring Boot REST API that fetches NHL game data with database caching and real
 
 4. **Test the API**
    ```bash
-   curl http://localhost:8081/api/games/2024-01-15
+   curl http://localhost:8081/api/games/2024-12-20
    ```
 
 ## 📋 API Documentation
