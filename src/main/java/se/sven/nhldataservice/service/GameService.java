@@ -31,7 +31,7 @@ public class GameService {
     private static final String API_ENDPOINT = "/v1/schedule/";
 
     /**
-     * Retrieves NHL games for a given date with intelligent caching strategy.
+     * Retrieves NHL games for a given date with caching strategy.
      * Uses database cache for historical games, always fetches fresh data for today's games.
      *
      * @param date the date to retrieve games for
@@ -51,7 +51,7 @@ public class GameService {
      * Today's games are always fetched fresh due to changing scores and status.
      */
     private boolean shouldFetchFromApi(LocalDate date) {
-        return date.equals(LocalDate.now());
+        return !date.isBefore(LocalDate.now());
     }
 
     /**
