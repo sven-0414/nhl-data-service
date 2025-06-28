@@ -1,5 +1,8 @@
 package se.sven.nhldataservice.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -14,6 +17,7 @@ import java.util.List;
 /**
  * REST controller for NHL games with database caching and API fallback.
  */
+@Tag(name = "Games", description = "NHL game data operations")
 @Slf4j
 @RestController
 @RequestMapping("/api/games")
@@ -22,7 +26,13 @@ public class GameController {
 
     private final GameService gameService;
 
-    @GetMapping("/{date}")
+    @Operation(
+            summary = "Get NHL games by date",
+            description = "Retrieves all NHL games for a specific date with database caching and API fallback"
+    )
+    @ApiResponse(responseCode = "200", description = "Games found")
+    @ApiResponse(responseCode = "204", description = "No games found for the specified date")
+    @ApiResponse(responseCode = "400", description = "Invalid date format")    @GetMapping("/{date}")
     public ResponseEntity<List<GameDTO>> getGames(
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
 
