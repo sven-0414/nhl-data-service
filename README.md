@@ -49,7 +49,7 @@ A Spring Boot REST API that fetches NHL game data with intelligent database cach
 
 5. **Test the API**
    ```bash
-   curl http://localhost:8081/api/games/2024-01-15
+   curl http://localhost:8081/api/v1/games/2024-01-15
    ```
 
 ## 📋 API Documentation
@@ -57,7 +57,7 @@ A Spring Boot REST API that fetches NHL game data with intelligent database cach
 ### Get Games by Date
 
 ```http
-GET /api/games/{date}
+GET /api/v1/games/{date}
 ```
 
 **Parameters:**
@@ -65,7 +65,7 @@ GET /api/games/{date}
 
 **Example Request:**
 ```bash
-curl http://localhost:8081/api/games/2025-01-15
+curl http://localhost:8081/api/v1/games/2025-01-15
 ```
 
 **Example Response:**

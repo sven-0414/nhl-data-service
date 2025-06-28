@@ -20,7 +20,7 @@ import java.util.List;
 @Tag(name = "Games", description = "NHL game data operations")
 @Slf4j
 @RestController
-@RequestMapping("/api/games")
+@RequestMapping("/api/v1/games")
 @RequiredArgsConstructor
 public class GameController {
 
