@@ -2,7 +2,6 @@ package se.sven.nhldataservice.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -27,7 +26,6 @@ public class Game {
     private String venueTimezone;
     private String gameState;
     private String gameScheduleState;
-    private LocalDate nhlGameDate;
     private int homeScore;
     private int awayScore;
     private int period;
@@ -71,7 +69,6 @@ public class Game {
         this.venueTimezone = dto.getVenueTimezone();
         this.gameState = dto.getGameState();
         this.gameScheduleState = dto.getGameScheduleState();
-        this.nhlGameDate = dto.getStartTimeUTC() != null ? dto.getStartTimeUTC().toLocalDate() : null;
         this.homeScore = dto.getHomeTeam() != null ? dto.getHomeTeam().getScore() : 0;
         this.awayScore = dto.getAwayTeam() != null ? dto.getAwayTeam().getScore() : 0;
         this.period = dto.getPeriodDescriptor() != null ? dto.getPeriodDescriptor().getNumber() : 0;

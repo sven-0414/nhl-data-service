@@ -16,6 +16,7 @@ import se.sven.nhldataservice.model.Team;
 import se.sven.nhldataservice.repository.GameRepository;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 
@@ -57,7 +58,7 @@ class GameServiceTest {
 
         // Then
         verify(restTemplate).getForObject(expectedUrl, String.class);
-        verify(gameRepository, never()).findAllByNhlGameDate(any()); // Ska INTE kolla databas
+        verify(gameRepository, never()).findAllByGameDate(any()); // Ska INTE kolla databas
         assertThat(result).isEmpty();
     }
 
@@ -65,9 +66,10 @@ class GameServiceTest {
     void shouldCheckDatabaseForHistoricalDate() throws Exception {
         // Given
         LocalDate historicalDate = LocalDate.now().minusDays(7);
+        String expectedDateString = historicalDate.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
-        when(gameRepository.findAllByNhlGameDate(historicalDate))
-                .thenReturn(Collections.emptyList()); // Tom databas
+        when(gameRepository.findAllByGameDate(expectedDateString))
+                .thenReturn(Collections.emptyList());
 
         String expectedUrl = "https://api-web.nhle.com/v1/schedule/" + historicalDate;
         String mockJsonResponse = """
@@ -90,7 +92,7 @@ class GameServiceTest {
         // Mock response med DATA istället för tom lista
         ScheduleResponseDTO mockScheduleResponse = new ScheduleResponseDTO();
         GameWeekDTO mockWeek = new GameWeekDTO();
-        mockWeek.setDate("2025-06-20");
+        mockWeek.setDate(expectedDateString);
         GameDTO mockGame = new GameDTO();
         mockGame.setId(123);
         mockWeek.setGames(List.of(mockGame)); // VIKTIGT: Inte tom lista!
@@ -105,11 +107,12 @@ class GameServiceTest {
         List<GameDTO> result = gameService.getGamesDtoWithFallback(historicalDate);
 
         // Then
-        verify(gameRepository).findAllByNhlGameDate(historicalDate);
+        verify(gameRepository).findAllByGameDate(expectedDateString);
         verify(restTemplate).getForObject(expectedUrl, String.class);
         verify(gamePersistenceService).saveGamesDtoToDB(any()); // Nu kommer det sparas!
         assertThat(result).hasSize(1);
     }
+
     @Test
     void shouldFetchFromApiForFutureDate() throws Exception {
         // Given
@@ -139,7 +142,7 @@ class GameServiceTest {
 
         // Then
         verify(restTemplate).getForObject(expectedUrl, String.class);
-        verify(gameRepository, never()).findAllByNhlGameDate(any(LocalDate.class)); // Ska INTE kolla databas
+        verify(gameRepository, never()).findAllByGameDate(any(String.class));
         verify(gamePersistenceService, never()).saveGamesDtoToDB(any()); // Ska INTE spara framtida data
         assertThat(result).isEmpty();
     }
@@ -148,6 +151,7 @@ class GameServiceTest {
     void shouldReturnCachedGamesWhenFoundInDatabase() {
         // Given
         LocalDate historicalDate = LocalDate.now().minusDays(5);
+        String expectedDateString = historicalDate.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
         // Mock Game entity från databas
         Game mockGame = new Game();
@@ -174,14 +178,14 @@ class GameServiceTest {
         mockGame.setHomeTeam(homeTeam);
         mockGame.setAwayTeam(awayTeam);
 
-        when(gameRepository.findAllByNhlGameDate(historicalDate))
+        when(gameRepository.findAllByGameDate(expectedDateString))
                 .thenReturn(List.of(mockGame));
 
         // When
         List<GameDTO> result = gameService.getGamesDtoWithFallback(historicalDate);
 
         // Then
-        verify(gameRepository).findAllByNhlGameDate(historicalDate);
+        verify(gameRepository).findAllByGameDate(expectedDateString);
         verify(restTemplate, never()).getForObject(any(String.class), eq(String.class));
         verify(gamePersistenceService, never()).saveGamesDtoToDB(any());
 

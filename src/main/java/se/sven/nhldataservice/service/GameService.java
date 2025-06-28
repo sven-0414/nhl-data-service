@@ -58,7 +58,8 @@ public class GameService {
      * Attempts to retrieve games from database cache, falls back to API if not found.
      */
     private List<GameDTO> getCachedGamesOrFetchFromApi(LocalDate date) {
-        List<Game> cachedGames = gameRepository.findAllByNhlGameDate(date);
+        String dateString = date.format(DateTimeFormatter.ISO_LOCAL_DATE);
+        List<Game> cachedGames = gameRepository.findAllByGameDate(dateString);
 
         if (!cachedGames.isEmpty()) {
             List<GameDTO> dtos = cachedGames.stream()
@@ -82,7 +83,16 @@ public class GameService {
             log.info("💾 Saved {} games to database for {}", dtos.size(), date);
         }
 
-        return dtos;
+        return dtos.stream()
+                .filter(game -> {
+                    try {
+                        LocalDate gameDate = LocalDate.parse(game.getGameDate());
+                        return gameDate.equals(date);
+                    } catch (Exception e) {
+                        return false;
+                    }
+                })
+                .toList();
     }
 
     /**
