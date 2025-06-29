@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.RestClientException;
 import se.sven.nhldataservice.dto.*;
@@ -37,6 +38,7 @@ public class GameService {
      * @param date the date to retrieve games for
      * @return list of games for the specified date
      */
+    @Transactional(readOnly = true)
     public List<GameDTO> getGamesDtoWithFallback(LocalDate date) {
         if (shouldFetchFromApi(date)) {
             log.info("🔄 Fetching directly from API for {}", date);
