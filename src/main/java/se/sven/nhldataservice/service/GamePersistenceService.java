@@ -36,13 +36,28 @@ public class GamePersistenceService {
 
         log.info("💾 Starting to save {} games to database", dtos.size());
 
+        // Debug: visa första DTO
+        GameDTO firstDto = dtos.get(0);
+        log.info("🔍 First DTO: id={}, gameDate={}, startTimeUTC={}",
+                firstDto.getId(), firstDto.getGameDate(), firstDto.getStartTimeUTC());
+
         Map<Long, Team> teamCache = new HashMap<>();
 
-        List<Game> gamesToSave = dtos.stream()
-                .map(dto -> createGameWithCachedTeams(dto, teamCache))
-                .toList();
+        try {
+            List<Game> gamesToSave = dtos.stream()
+                    .map(dto -> createGameWithCachedTeams(dto, teamCache))
+                    .toList();
 
-        gameRepository.saveAll(gamesToSave);
+            log.info("🔍 Created {} Game entities", gamesToSave.size());
+
+            gameRepository.saveAll(gamesToSave);
+            log.info("✅ SaveAll completed successfully");
+
+        } catch (Exception e) {
+            log.error("❌ Error during save: {}", e.getMessage(), e);
+            throw e;
+        }
+
         log.info("💾 Completed saving {} games", dtos.size());
     }
 
@@ -84,4 +99,5 @@ public class GamePersistenceService {
         log.debug("🏒 Saved new team: {} ({})", team.getName(), team.getId());
         return savedTeam;
     }
+
 }

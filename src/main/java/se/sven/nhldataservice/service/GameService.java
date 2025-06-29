@@ -38,7 +38,7 @@ public class GameService {
      * @param date the date to retrieve games for
      * @return list of games for the specified date
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<GameDTO> getGamesDtoWithFallback(LocalDate date) {
         if (shouldFetchFromApi(date)) {
             log.info("🔄 Fetching directly from API for {}", date);
