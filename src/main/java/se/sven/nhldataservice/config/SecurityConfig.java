@@ -25,11 +25,14 @@ public class SecurityConfig {
         this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
     }
 
+    // SuppressWarnings: CSRF protection intentionally disabled for stateless JWT API
+    // This is a REST API using JWT tokens in Authorization headers, not browser cookies
+    // CSRF attacks require cookies/sessions which this API does not use
+    @SuppressWarnings("squid:S4502")  // SonarCloud CSRF rule
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // CSRF protection disabled for stateless JWT API - no cookies/sessions used
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf.disable())        // NOSONAR: Safe for stateless JWT API
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/index.html").permitAll()
