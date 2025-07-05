@@ -28,6 +28,7 @@ public class DataLoader implements CommandLineRunner {
             String defaultPassword = System.getenv("ADMIN_PASSWORD") != null ?
                     System.getenv("ADMIN_PASSWORD") : "defaultPassword123";
             admin.setPassword(passwordEncoder.encode(defaultPassword));
+            admin.setEmail("admin@localhost");
             admin.setEnabled(true);
             userRepository.save(admin);
 
