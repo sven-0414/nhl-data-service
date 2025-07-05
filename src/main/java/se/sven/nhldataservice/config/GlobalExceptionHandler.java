@@ -9,6 +9,9 @@ import se.sven.nhldataservice.exception.InvalidDateFormatException;
 
 import java.time.LocalDateTime;
 
+/**
+ * Centralized exception handling with consistent error responses.
+ */
 @Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {

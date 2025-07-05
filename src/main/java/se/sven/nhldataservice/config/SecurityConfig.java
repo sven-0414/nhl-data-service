@@ -12,6 +12,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+/**
+ * JWT-based stateless security configuration.
+ * CSRF disabled for REST API using Authorization headers.
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -28,7 +32,7 @@ public class SecurityConfig {
     // SuppressWarnings: CSRF protection intentionally disabled for stateless JWT API
     // This is a REST API using JWT tokens in Authorization headers, not browser cookies
     // CSRF attacks require cookies/sessions which this API does not use
-    @SuppressWarnings("squid:S4502")  // SonarCloud CSRF rule
+    @SuppressWarnings("squid:S4502")  // CSRF safe for stateless JWT API
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -36,7 +40,6 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/index.html").permitAll()
-                .requestMatchers("/api/v1/games/**").permitAll() // Om du vill att NHL data ska vara öppet
                 .anyRequest().authenticated()
         )
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))

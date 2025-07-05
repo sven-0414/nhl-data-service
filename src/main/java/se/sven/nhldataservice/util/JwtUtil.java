@@ -11,6 +11,10 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.function.Function;
 
+/**
+ * JWT token generation and validation utilities.
+ * Default secret should be overridden in production via jwt.secret property.
+ */
 @Component
 public class JwtUtil {
 

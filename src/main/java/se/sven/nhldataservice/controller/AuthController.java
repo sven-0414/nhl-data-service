@@ -10,6 +10,10 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.web.bind.annotation.*;
 import se.sven.nhldataservice.util.JwtUtil;
 
+/**
+ * Authentication controller for JWT token-based login.
+ * Provides endpoints for user authentication and token generation.
+ */
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor

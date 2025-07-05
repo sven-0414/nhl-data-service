@@ -8,6 +8,10 @@ import org.springframework.stereotype.Component;
 import se.sven.nhldataservice.model.User;
 import se.sven.nhldataservice.repository.UserRepository;
 
+/**
+ * Creates default admin user on startup if none exists.
+ * Uses ADMIN_PASSWORD env var or falls back to default.
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -23,7 +27,7 @@ public class DataLoader implements CommandLineRunner {
             admin.setUsername("admin");
             String defaultPassword = System.getenv("ADMIN_PASSWORD") != null ?
                     System.getenv("ADMIN_PASSWORD") : "defaultPassword123";
-            admin.setPassword(passwordEncoder.encode(defaultPassword));            admin.setEmail("admin@example.com");
+            admin.setPassword(passwordEncoder.encode(defaultPassword));
             admin.setEnabled(true);
             userRepository.save(admin);
 
