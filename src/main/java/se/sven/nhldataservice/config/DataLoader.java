@@ -12,10 +12,6 @@ import se.sven.nhldataservice.repository.RoleRepository;
 import se.sven.nhldataservice.repository.UserRepository;
 import se.sven.nhldataservice.service.RoleService;
 
-/**
- * Creates default admin user and roles on startup if they don't exist.
- * Uses ADMIN_PASSWORD env var or falls back to default for development.
- */
 @Slf4j
 @Component
 public class DataLoader implements CommandLineRunner {
@@ -81,6 +77,7 @@ public class DataLoader implements CommandLineRunner {
 
             User admin = new User();
             admin.setUsername("admin");
+            admin.setEmail("admin@example.com");
             admin.setEnabled(true);
 
             String adminPassword = getAdminPassword();
