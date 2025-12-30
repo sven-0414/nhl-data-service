@@ -56,9 +56,9 @@ public class DataLoader implements CommandLineRunner {
 
         try {
             roleService.createDefaultRoles();
-            log.info("✅ Default roles ensured (USER, ADMIN)");
+            log.info("Default roles ensured (USER, ADMIN)");
         } catch (Exception e) {
-            log.error("❌ Failed to create default roles: {}", e.getMessage(), e);
+            log.error("Failed to create default roles: {}", e.getMessage(), e);
             throw new ApplicationInitializationException("Failed to initialize default roles", e);
         }
     }
@@ -89,13 +89,13 @@ public class DataLoader implements CommandLineRunner {
             admin.addRole(adminRole);
             userRepository.save(admin);
 
-            log.info("✅ Admin user created successfully");
+            log.info("Admin user created successfully");
             if (isDefaultPassword(adminPassword)) {
-                log.warn("⚠️  WARNING: Using default admin password! Set ADMIN_PASSWORD environment variable in production!");
+                log.warn("WARNING: Using default admin password! Set ADMIN_PASSWORD environment variable in production!");
             }
 
         } catch (Exception e) {
-            log.error("❌ Failed to create admin user: {}", e.getMessage(), e);
+            log.error("Failed to create admin user: {}", e.getMessage(), e);
             throw new ApplicationInitializationException("Failed to create default admin user", e);
         }
     }
