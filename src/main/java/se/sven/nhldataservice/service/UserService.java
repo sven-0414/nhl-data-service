@@ -157,7 +157,7 @@ public class UserService {
      * Users can update themselves, admins can update anyone.
      */
     public boolean isAllowedToUpdate(Long userId, Authentication auth) {
-        return getCurrentUserId(auth).equals(userId) || isAdmin(auth);
+            return getCurrentUserId(auth).equals(userId) || isAdmin(auth);
     }
 
     /**
