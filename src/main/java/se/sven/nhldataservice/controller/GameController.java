@@ -37,7 +37,7 @@ public class GameController {
     @ApiResponse(responseCode = "400", description = "Invalid date format")
     @GetMapping("/{date}")
     public ResponseEntity<List<GameDTO>> getGames(@PathVariable String date) {
-        LocalDate validatedDate = validateAndParseDate(date); // <-- Lägg till denna
+        LocalDate validatedDate = validateAndParseDate(date);
         List<GameDTO> games = gameService.getGamesDtoWithFallback(validatedDate);
         return buildResponse(games, validatedDate);
     }
@@ -52,11 +52,11 @@ public class GameController {
 
         private ResponseEntity<List<GameDTO>> buildResponse(List<GameDTO> games, LocalDate date) {
         if (games.isEmpty()) {
-            log.info("📭 No games found for {}", date);
+            log.debug("No games found for {}", date);
             return ResponseEntity.noContent().build();
         }
 
-        log.info("📤 Returning {} games for {}", games.size(), date);
+        log.debug("Returning {} games for {}", games.size(), date);
         return ResponseEntity.ok(games);
     }
 }

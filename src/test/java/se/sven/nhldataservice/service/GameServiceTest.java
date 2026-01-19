@@ -46,19 +46,19 @@ class GameServiceTest {
         // Given
         LocalDate today = LocalDate.now();
         String expectedUrl = "https://api-web.nhle.com/v1/schedule/" + today;
-        String mockJsonResponse = "{\"gameWeek\":[]}"; // Minimal NHL API response
+        String mockJsonResponse = "{\"gameWeek\":[]}";
 
         when(restTemplate.getForObject(expectedUrl, String.class))
                 .thenReturn(mockJsonResponse);
         when(objectMapper.readValue(mockJsonResponse, ScheduleResponseDTO.class))
-                .thenReturn(new ScheduleResponseDTO()); // Tom response
+                .thenReturn(new ScheduleResponseDTO());
 
         // When
         List<GameDTO> result = gameService.getGamesDtoWithFallback(today);
 
         // Then
         verify(restTemplate).getForObject(expectedUrl, String.class);
-        verify(gameRepository, never()).findAllByGameDate(any()); // Ska INTE kolla databas
+        verify(gameRepository, never()).findAllByGameDate(any()); // Should NOT check database for today
         assertThat(result).isEmpty();
     }
 
@@ -89,13 +89,13 @@ class GameServiceTest {
         }
         """;
 
-        // Mock response med DATA istället för tom lista
+        // API response must contain games to trigger persistence
         ScheduleResponseDTO mockScheduleResponse = new ScheduleResponseDTO();
         GameWeekDTO mockWeek = new GameWeekDTO();
         mockWeek.setDate(expectedDateString);
         GameDTO mockGame = new GameDTO();
         mockGame.setId(123);
-        mockWeek.setGames(List.of(mockGame)); // VIKTIGT: Inte tom lista!
+        mockWeek.setGames(List.of(mockGame));
         mockScheduleResponse.setGameWeek(List.of(mockWeek));
 
         when(restTemplate.getForObject(expectedUrl, String.class))
@@ -109,7 +109,7 @@ class GameServiceTest {
         // Then
         verify(gameRepository).findAllByGameDate(expectedDateString);
         verify(restTemplate).getForObject(expectedUrl, String.class);
-        verify(gamePersistenceService).saveGamesDtoToDB(any()); // Nu kommer det sparas!
+        verify(gamePersistenceService).saveGamesDtoToDB(any());
         assertThat(result).hasSize(1);
     }
 
@@ -143,7 +143,7 @@ class GameServiceTest {
         // Then
         verify(restTemplate).getForObject(expectedUrl, String.class);
         verify(gameRepository, never()).findAllByGameDate(any(String.class));
-        verify(gamePersistenceService, never()).saveGamesDtoToDB(any()); // Ska INTE spara framtida data
+        verify(gamePersistenceService, never()).saveGamesDtoToDB(any()); // Should NOT persist future data
         assertThat(result).isEmpty();
     }
 
@@ -153,7 +153,6 @@ class GameServiceTest {
         LocalDate historicalDate = LocalDate.now().minusDays(5);
         String expectedDateString = historicalDate.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
-        // Mock Game entity från databas
         Game mockGame = new Game();
         mockGame.setId(12345L);
         mockGame.setSeason(20242025);
@@ -162,7 +161,6 @@ class GameServiceTest {
         mockGame.setHomeScore(3);
         mockGame.setAwayScore(2);
 
-        // Mock teams
         Team homeTeam = new Team();
         homeTeam.setId(1L);
         homeTeam.setName("Boston Bruins");
@@ -186,7 +184,7 @@ class GameServiceTest {
 
         // Then
         verify(gameRepository).findAllByGameDate(expectedDateString);
-        verify(restTemplate, never()).getForObject(any(String.class), eq(String.class));
+        verify(restTemplate, never()).getForObject(any(String.class), eq(String.class)); // Should use cache
         verify(gamePersistenceService, never()).saveGamesDtoToDB(any());
 
         assertThat(result).hasSize(1);

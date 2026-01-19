@@ -67,7 +67,7 @@ public class DataLoader implements CommandLineRunner {
         log.info("Checking for admin user...");
 
         if (userRepository.findByUsername("admin").isPresent()) {
-            log.info("📋 Admin user already exists, skipping creation");
+            log.info("Admin user already exists, skipping creation");
             return;
         }
 
@@ -105,11 +105,11 @@ public class DataLoader implements CommandLineRunner {
     private String getAdminPassword() {
         String envPassword = System.getenv("ADMIN_PASSWORD");
         if (envPassword != null && !envPassword.trim().isEmpty()) {
-            log.info("📧 Using admin password from ADMIN_PASSWORD environment variable");
+            log.info("Using admin password from ADMIN_PASSWORD environment variable");
             return envPassword;
         }
 
-        log.warn("🔧 Using default admin password (development only)");
+        log.warn("Using default admin password (development only)");
         return "defaultPassword123";
     }
 
