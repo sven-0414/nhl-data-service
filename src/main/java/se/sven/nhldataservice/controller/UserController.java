@@ -32,8 +32,6 @@ public class UserController {
         this.userService = userService;
     }
 
-    // === User Profile Operations ===
-
     /**
      * Get current user's profile.
      */
@@ -87,8 +85,6 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    // === Admin Operations ===
-
     /**
      * Get all users (Admin only).
      */
@@ -99,28 +95,24 @@ public class UserController {
     @ApiResponse(responseCode = "200", description = "Users retrieved successfully")
     @ApiResponse(responseCode = "403", description = "Insufficient permissions")
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserResponse>> getAllUsers() {
         List<UserResponse> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
     }
 
     /**
-     * Get user by ID (Admin or own profile).
+     * Get user by ID (accessible by all authenticated users).
      */
     @Operation(
             summary = "Get user by ID",
-            description = "Retrieves user by ID. Users can access their own profile, admins can access any user."
+            description = "Retrieves user by ID. All authenticated users can view user profiles."
     )
     @ApiResponse(responseCode = "200", description = "User found")
-    @ApiResponse(responseCode = "403", description = "Insufficient permissions")
     @ApiResponse(responseCode = "404", description = "User not found")
     @GetMapping("/{id}")
-    @PreAuthorize("#id == authentication.principal.username or hasRole('ADMIN')")
     public ResponseEntity<UserResponse> getUserById(
-            @Parameter(description = "User ID") @PathVariable Long id,
-            Authentication auth) {
-        UserResponse user = userService.getUserById(id, auth);
+            @Parameter(description = "User ID") @PathVariable Long id) {  // ← Ingen auth parameter
+        UserResponse user = userService.getUserById(id);
         return ResponseEntity.ok(user);
     }
 

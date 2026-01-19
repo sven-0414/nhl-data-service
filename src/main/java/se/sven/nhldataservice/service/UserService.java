@@ -5,9 +5,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import se.sven.nhldataservice.dto.*;
-import se.sven.nhldataservice.exception.UserNotFoundException;
-import se.sven.nhldataservice.exception.InsufficientPermissionException;
-import se.sven.nhldataservice.exception.LastAdminException;
+import se.sven.nhldataservice.exception.*;
 import se.sven.nhldataservice.model.Role;
 import se.sven.nhldataservice.model.User;
 import se.sven.nhldataservice.model.enums.RoleName;
@@ -130,17 +128,11 @@ public class UserService {
     }
 
     /**
-     * Retrieves user by ID.
+     * Retrieves user by ID (accessible by all authenticated users).
      */
-    public UserResponse getUserById(Long id, Authentication auth) {
+    public UserResponse getUserById(Long id) {
         User user = findUserById(id);
-
-        // Users can only view their own profile, admins can view any
-        if (isAllowedToUpdate(id, auth)) {
-            return mapToResponse(user);
-        } else {
-            throw new InsufficientPermissionException("You can only view your own profile");
-        }
+        return mapToResponse(user);
     }
 
     /**
@@ -237,16 +229,15 @@ public class UserService {
 
     private void validateUniqueUsername(String username) {
         if (userRepository.findByUsername(username).isPresent()) {
-            throw new IllegalArgumentException("Username already exists: " + username);
+            throw new UsernameAlreadyExistsException("Username already exists: " + username);
         }
     }
 
     private void validateUniqueEmail(String email) {
-        if (userRepository.findByEmail(email).isPresent()) {
-            throw new IllegalArgumentException("Email already exists: " + email);
+        if (userRepository.existsByEmail(email)) {
+            throw new EmailAlreadyExistsException("Email already exists: " + email);
         }
     }
-
     private Set<Role> mapRoleNames(Set<RoleName> roleNames) {
         if (roleNames == null || roleNames.isEmpty()) {
             // Default to the USER role

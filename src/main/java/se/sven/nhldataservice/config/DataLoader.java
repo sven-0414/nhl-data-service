@@ -66,7 +66,7 @@ public class DataLoader implements CommandLineRunner {
     private void createDefaultAdminUser() {
         log.info("Checking for admin user...");
 
-        if (userRepository.findByUsername("admin").isPresent()) {
+        if (userRepository.existsByUsername("admin")) {
             log.info("Admin user already exists, skipping creation");
             return;
         }
