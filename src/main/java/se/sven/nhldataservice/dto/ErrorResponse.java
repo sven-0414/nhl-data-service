@@ -7,6 +7,10 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * Request DTO for user registration.
+ * Creates a new user account with USER role by default.
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

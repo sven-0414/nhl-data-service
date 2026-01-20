@@ -18,6 +18,7 @@ import java.util.Map;
 /**
  * Centralized exception handling with consistent error responses.
  */
+@SuppressWarnings("unused")  // ← Spring calls these methods via @ExceptionHandler
 @Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -76,6 +77,10 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    /**
+     * Handles validation errors from @Valid annotations.
+     * Returns field-level error messages for client-side display.
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException e) {
         Map<String, String> errors = new HashMap<>();
@@ -98,13 +103,14 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<Map<String, String>> handleBadCredentials(BadCredentialsException ex) {
-        Map<String, String> error = new HashMap<>();
-        error.put("error", "Invalid username or password");
-        error.put("timestamp", LocalDateTime.now().toString());
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
+        // Note: Don't use ex.getMessage() to avoid leaking information to potential attackers
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse(
+                        "Invalid username or password",
+                        LocalDateTime.now()
+                ));
     }
-
     @ExceptionHandler(UsernameAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleUsernameAlreadyExists(UsernameAlreadyExistsException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
