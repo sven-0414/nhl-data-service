@@ -7,6 +7,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import se.sven.nhldataservice.dto.TeamDTO;
 
+/**
+ * Entity representing an NHL team.
+ */
 @Data
 @Entity
 @NoArgsConstructor
@@ -21,7 +24,6 @@ public class Team {
 
     /**
      * Maps from NHL API's TeamDTO, extracting localized names from nested objects.
-     *
      * @param dto NHL API team data
      */
     public Team(TeamDTO dto) {

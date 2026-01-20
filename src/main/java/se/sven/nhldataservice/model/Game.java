@@ -8,6 +8,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import se.sven.nhldataservice.dto.GameDTO;
 
+/**
+ * Game entity representing an NHL game with teams, scores, and live game data.
+ * Maps NHL API data to database structure with denormalized fields for performance.
+ */
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
