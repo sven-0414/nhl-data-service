@@ -16,7 +16,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 /**
  * JWT-based stateless security configuration.
- *
  * Security considerations:
  * - CSRF disabled: Safe for stateless JWT API (no cookies/sessions)
  * - Stateless sessions: Each request authenticated via JWT token

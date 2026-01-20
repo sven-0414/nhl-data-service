@@ -86,14 +86,13 @@ public class UserController {
     }
 
     /**
-     * Get all users (Admin only).
+     * Get all users (accessible by all authenticated users).
      */
     @Operation(
             summary = "Get all users",
-            description = "Retrieves all users in the system. Admin access required."
+            description = "Retrieves all users in the system. Accessible by all authenticated users."
     )
     @ApiResponse(responseCode = "200", description = "Users retrieved successfully")
-    @ApiResponse(responseCode = "403", description = "Insufficient permissions")
     @GetMapping
     public ResponseEntity<List<UserResponse>> getAllUsers() {
         List<UserResponse> users = userService.getAllUsers();
@@ -111,7 +110,7 @@ public class UserController {
     @ApiResponse(responseCode = "404", description = "User not found")
     @GetMapping("/{id}")
     public ResponseEntity<UserResponse> getUserById(
-            @Parameter(description = "User ID") @PathVariable Long id) {  // ← Ingen auth parameter
+            @Parameter(description = "User ID") @PathVariable Long id) {
         UserResponse user = userService.getUserById(id);
         return ResponseEntity.ok(user);
     }
