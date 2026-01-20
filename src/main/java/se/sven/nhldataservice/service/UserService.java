@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
  * role management, and permission checks.
  */
 @Service
-@Transactional
 public class UserService {
 
     private final UserRepository userRepository;
@@ -40,6 +39,7 @@ public class UserService {
      * Creates a new user with specified roles.
      * Only admins can create users with the ADMIN role.
      */
+    @Transactional
     public UserResponse createUser(CreateUserRequest request, Authentication auth) {
         validateUniqueUsername(request.getUsername());
 
@@ -121,6 +121,7 @@ public class UserService {
     /**
      * Retrieves all users. Only accessible by admins.
      */
+    @Transactional
     public List<UserResponse> getAllUsers() {
         return userRepository.findAll().stream()
                 .map(this::mapToResponse)
@@ -130,6 +131,7 @@ public class UserService {
     /**
      * Retrieves user by ID (accessible by all authenticated users).
      */
+    @Transactional
     public UserResponse getUserById(Long id) {
         User user = findUserById(id);
         return mapToResponse(user);
@@ -148,14 +150,14 @@ public class UserService {
      * Checks if the authenticated user can update the specified user.
      * Users can update themselves, admins can update anyone.
      */
-    public boolean isAllowedToUpdate(Long userId, Authentication auth) {
+    private boolean isAllowedToUpdate(Long userId, Authentication auth) {
             return getCurrentUserId(auth).equals(userId) || isAdmin(auth);
     }
 
     /**
      * Gets the current authenticated user's ID.
      */
-    public Long getCurrentUserId(Authentication auth) {
+    private Long getCurrentUserId(Authentication auth) {
         String username = auth.getName();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("Current user not found"));
@@ -204,8 +206,6 @@ public class UserService {
         User savedUser = userRepository.save(user);
         return mapToResponse(savedUser);
     }
-
-    // === Private helper methods ===
 
     /**
      * Updates basic user fields (username, email) from request if they are different.

@@ -33,11 +33,6 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
-        // Check if the user account is enabled
-        if (!user.isEnabled()) {
-            throw new UsernameNotFoundException("User account is disabled: " + username);
-        }
-
         // Convert roles to Spring Security authorities
         String[] authorities = user.getRoles().stream()
                 .map(role -> "ROLE_" + role.getName().toString())
@@ -50,7 +45,6 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .accountExpired(false)
                 .accountLocked(false)
                 .credentialsExpired(false)
-                .disabled(!user.isEnabled())
                 .build();
     }
 }

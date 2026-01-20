@@ -1,5 +1,6 @@
 package se.sven.nhldataservice.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import se.sven.nhldataservice.model.Role;
@@ -9,6 +10,7 @@ import se.sven.nhldataservice.repository.RoleRepository;
 /**
  * Service for role management operations.
  */
+@Slf4j
 @Service
 @Transactional
 public class RoleService {
@@ -24,8 +26,10 @@ public class RoleService {
      * Should be called during application startup.
      */
     public void createDefaultRoles() {
+        log.info("Initializing default roles");
         createRoleIfNotExists(RoleName.USER);
         createRoleIfNotExists(RoleName.ADMIN);
+        log.info("Default roles initialization complete");
     }
 
     /**
@@ -36,6 +40,9 @@ public class RoleService {
             Role role = new Role();
             role.setName(roleName);
             roleRepository.save(role);
+            log.info("Created role: {}", roleName);
+        } else {
+            log.debug("Role already exists: {}", roleName);
         }
     }
 }
