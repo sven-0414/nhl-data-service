@@ -50,28 +50,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 username = jwtUtil.getUsernameFromToken(jwtToken);
             } catch (Exception e) {
-                logger.error("Unable to get JWT Token");
+                logger.error("Failed to extract JWT token", e);
             }
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
-
             if (jwtUtil.validateToken(jwtToken, username)) {
 
-                User user = userRepository.findByUsername(username)
-                        .orElseThrow(() -> new RuntimeException("User not found or deleted"));
+                User user = userRepository.findByUsername(username).orElse(null);
 
-                if (!user.isEnabled()) {
-                    throw new RuntimeException("User account is disabled");
+                if (user == null || !user.isEnabled()) {
+                    logger.warn("Authentication failed: User not found or disabled");
+                    filterChain.doFilter(request, response);
+                    return;
                 }
+
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
-        }
-        filterChain.doFilter(request, response);
+        }        filterChain.doFilter(request, response);
     }
 }
