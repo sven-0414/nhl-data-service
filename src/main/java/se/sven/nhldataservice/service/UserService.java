@@ -157,7 +157,7 @@ public class UserService {
     /**
      * Gets the current authenticated user's ID.
      */
-    private Long getCurrentUserId(Authentication auth) {
+    public Long getCurrentUserId(Authentication auth) {
         String username = auth.getName();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("Current user not found"));
