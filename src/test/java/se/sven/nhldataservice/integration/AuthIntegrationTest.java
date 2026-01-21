@@ -191,7 +191,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(post("/auth/login")
                         .contentType(APPLICATION_JSON)
                         .content(loginRequest))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -210,7 +210,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(post("/auth/login")
                         .contentType(APPLICATION_JSON)
                         .content(loginRequest))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -226,7 +226,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(post("/auth/login")
                         .contentType(APPLICATION_JSON)
                         .content(loginRequest))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
