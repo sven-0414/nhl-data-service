@@ -5,6 +5,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.ZonedDateTime;
 
+/**
+ * DTO representing an NHL game.
+ * Maps to NHL API's game object structure.
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

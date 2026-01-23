@@ -30,6 +30,7 @@ public class GameService {
 
     private static final String BASE_URL = "https://api-web.nhle.com";
     private static final String API_ENDPOINT = "/v1/schedule/";
+    private static final int JSON_PREVIEW_LENGTH = 200;
 
     /**
      * Retrieves NHL games for a given date with caching strategy.
@@ -40,8 +41,11 @@ public class GameService {
      */
     @Transactional
     public List<GameDTO> getGamesDtoWithFallback(LocalDate date) {
+        if (date == null) {
+            throw new IllegalArgumentException("Date cannot be null");
+        }
         if (shouldFetchFromApi(date)) {
-            log.info("🔄 Fetching directly from API for {}", date);
+            log.info("Fetching directly from API for {}", date);
             return fetchAndCacheGames(date);
         }
 
@@ -67,7 +71,7 @@ public class GameService {
             List<GameDTO> dtos = cachedGames.stream()
                     .map(this::mapGameToDTO)
                     .toList();
-            log.info("📋 Returning {} games from database for {}", dtos.size(), date);
+            log.info("Returning {} games from database for {}", dtos.size(), date);
             return dtos;
         }
 
@@ -82,7 +86,7 @@ public class GameService {
 
         if (!dtos.isEmpty() && !shouldFetchFromApi(date)) {
             gamePersistenceService.saveGamesDtoToDB(dtos);
-            log.info("💾 Saved {} games to database for {}", dtos.size(), date);
+            log.info("Saved {} games to database for {}", dtos.size(), date);
         }
 
         return dtos.stream()
@@ -102,13 +106,13 @@ public class GameService {
      */
     private List<GameDTO> fetchGamesFromApi(LocalDate date) {
         String url = buildApiUrl(date);
-        log.info("🌐 Calling NHL API: {}", url);
+        log.info("Calling NHL API: {}", url);
 
         try {
             String jsonResponse = restTemplate.getForObject(url, String.class);
             return parseJsonToGameDTOs(jsonResponse);
         } catch (RestClientException e) {
-            log.error("❌ Error during API call: {}", e.getMessage());
+            log.error("Error during API call: {}", e.getMessage());
             return Collections.emptyList();
         }
     }
@@ -132,18 +136,21 @@ public class GameService {
             ScheduleResponseDTO scheduleResponse = objectMapper.readValue(json, ScheduleResponseDTO.class);
             List<GameDTO> allGames = extractGamesFromSchedule(scheduleResponse);
 
-            log.info("✅ Found {} games from API", allGames.size());
+            log.info("Found {} games from API", allGames.size());
             return allGames;
 
         } catch (Exception e) {
-            log.error("❌ JSON parsing failed: {}", e.getMessage());
+            log.error("JSON parsing failed: {}", e.getMessage());
             return Collections.emptyList();
         }
     }
 
     private void logJsonPreview(String json) {
-        log.debug("📄 Processing JSON response (first 200 characters): {}",
-                json.length() > 200 ? json.substring(0, 200) + "..." : json);
+        log.debug("Processing JSON response (first {} characters): {}",
+                JSON_PREVIEW_LENGTH,
+                json.length() > JSON_PREVIEW_LENGTH
+                        ? json.substring(0, JSON_PREVIEW_LENGTH) + "..."
+                        : json);
     }
 
     /**

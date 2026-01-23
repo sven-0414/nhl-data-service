@@ -24,22 +24,18 @@ public class GamePersistenceService {
     private final TeamRepository teamRepository;
 
     /**
-     * Saves NHL game data to the database with optimized team handling to avoid duplicate saves.
+     * Saves games to database with team caching to avoid duplicate lookups
+     * and ensure proper entity relationships.
      *
      * @param dtos list of games to persist
      */
     public void saveGamesDtoToDB(List<GameDTO> dtos) {
         if (dtos.isEmpty()) {
-            log.info("📭 No games to save");
+            log.debug("No games to save");
             return;
         }
 
-        log.info("💾 Starting to save {} games to database", dtos.size());
-
-        // Debug: visa första DTO
-        GameDTO firstDto = dtos.get(0);
-        log.info("🔍 First DTO: id={}, gameDate={}, startTimeUTC={}",
-                firstDto.getId(), firstDto.getGameDate(), firstDto.getStartTimeUTC());
+        log.info("Saving {} games to database", dtos.size());
 
         Map<Long, Team> teamCache = new HashMap<>();
 
@@ -48,22 +44,15 @@ public class GamePersistenceService {
                     .map(dto -> createGameWithCachedTeams(dto, teamCache))
                     .toList();
 
-            log.info("🔍 Created {} Game entities", gamesToSave.size());
-
             gameRepository.saveAll(gamesToSave);
-            log.info("✅ SaveAll completed successfully");
+            log.info("Successfully saved {} games", dtos.size());
 
         } catch (Exception e) {
-            log.error("❌ Error during save: {}", e.getMessage(), e);
+            log.error("Failed to save games: {}", e.getMessage(), e);
             throw e;
         }
-
-        log.info("💾 Completed saving {} games", dtos.size());
     }
 
-    /**
-     * Creates a Game entity from DTO with cached team references to avoid duplicate database calls.
-     */
     private Game createGameWithCachedTeams(GameDTO dto, Map<Long, Team> teamCache) {
         Game game = new Game(dto);
 
@@ -80,10 +69,6 @@ public class GamePersistenceService {
         return game;
     }
 
-    /**
-     * Retrieves team from cache or fetches/saves from the database if not found.
-     * Optimized to reduce database round trips during batch game saves.
-     */
     private Team getCachedOrSaveTeam(Team team, Map<Long, Team> teamCache) {
         return teamCache.computeIfAbsent(team.getId(), id ->
                 teamRepository.findById(id)
@@ -91,13 +76,9 @@ public class GamePersistenceService {
         );
     }
 
-    /**
-     * Persists a new team to database and logs the operation.
-     */
     private Team saveNewTeam(Team team) {
         Team savedTeam = teamRepository.save(team);
-        log.debug("🏒 Saved new team: {} ({})", team.getName(), team.getId());
+        log.debug("Saved new team: {} ({})", team.getName(), team.getId());
         return savedTeam;
     }
-
 }
