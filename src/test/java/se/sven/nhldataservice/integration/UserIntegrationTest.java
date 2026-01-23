@@ -162,7 +162,7 @@ class UserIntegrationTest extends BaseIntegrationTest {
                         .header("Authorization", bearerToken(token)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(3))); // minst 3 användare
+                .andExpect(jsonPath("$.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(3)));
     }
 
     // === PUT /api/v1/users/{id} ===

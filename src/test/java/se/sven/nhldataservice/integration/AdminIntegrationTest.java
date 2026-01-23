@@ -26,7 +26,7 @@ class AdminIntegrationTest extends BaseIntegrationTest {
                         .header("Authorization", bearerToken(token)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(4)); // admin från DataLoader + testadmin + 2 users
+                .andExpect(jsonPath("$.length()").value(4));
     }
 
     // === POST /api/v1/users ===

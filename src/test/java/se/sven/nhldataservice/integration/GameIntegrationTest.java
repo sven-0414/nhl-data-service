@@ -65,7 +65,7 @@ class GameIntegrationTest extends BaseIntegrationTest {
         // Given
         User user = createTestUser("testuser", "test@example.com", "password123");
         String token = generateToken(user);
-        String dateWithGames = "2026-01-13"; // Datum där vi VET att det finns games
+        String dateWithGames = "2026-01-13"; // Date with known games
 
         // When & Then
         mockMvc.perform(get("/api/v1/games/" + dateWithGames)
@@ -94,12 +94,12 @@ class GameIntegrationTest extends BaseIntegrationTest {
         // Given
         User user = createTestUser("testuser", "test@example.com", "password123");
         String token = generateToken(user);
-        String pastDate = "2025-12-01"; // Datum i det förflutna
+        String pastDate = "2025-12-01";
 
         // When & Then
         mockMvc.perform(get("/api/v1/games/" + pastDate)
                         .header("Authorization", bearerToken(token)))
-                .andExpect(status().isOk()) // eller .isNoContent() om inga games
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray());
     }
 
@@ -110,11 +110,11 @@ class GameIntegrationTest extends BaseIntegrationTest {
         // Given
         User user = createTestUser("testuser", "test@example.com", "password123");
         String token = generateToken(user);
-        String farFutureDate = "2030-12-31"; // Datum långt fram där det garanterat inte finns games
+        String farFutureDate = "2030-12-31";
 
         // When & Then
         mockMvc.perform(get("/api/v1/games/" + farFutureDate)
                         .header("Authorization", bearerToken(token)))
-                .andExpect(status().isNoContent()); // Enligt din API-dokumentation
+                .andExpect(status().isNoContent());
     }
 }
