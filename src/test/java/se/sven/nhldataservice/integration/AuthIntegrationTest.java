@@ -172,7 +172,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         String token = generateToken(user);
 
         // When & Then - Use token to access protected endpoint
-        mockMvc.perform(get("/api/v1/users/me")  // ← GET istället för POST!
+        mockMvc.perform(get("/api/v1/users/me")
                         .header("Authorization", bearerToken(token)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("testuser"));
