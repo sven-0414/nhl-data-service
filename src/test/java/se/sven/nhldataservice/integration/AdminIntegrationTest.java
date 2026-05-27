@@ -352,6 +352,6 @@ class AdminIntegrationTest extends BaseIntegrationTest {
         // When & Then - Try to delete self (last admin)
         mockMvc.perform(delete("/api/v1/users/" + admin.getId())
                         .header("Authorization", bearerToken(token)))
-                .andExpect(status().isBadRequest()); // eller .isConflict() beroende på din implementation
+                .andExpect(status().isBadRequest());
     }
 }
