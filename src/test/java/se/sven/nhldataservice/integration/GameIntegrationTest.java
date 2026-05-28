@@ -15,10 +15,10 @@ class GameIntegrationTest extends BaseIntegrationTest {
         // Given
         User user = createTestUser("testuser", "test@example.com", "password123");
         String token = generateToken(user);
-        String today = LocalDate.now().toString();
+        String dateWithGames = "2026-01-13"; // Date with known games
 
         // When & Then
-        mockMvc.perform(get("/api/v1/games/" + today)
+        mockMvc.perform(get("/api/v1/games/" + dateWithGames)
                         .header("Authorization", bearerToken(token)))
                 .andExpect(status().isOk());
     }

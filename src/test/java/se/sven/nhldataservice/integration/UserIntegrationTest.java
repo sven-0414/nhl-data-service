@@ -106,7 +106,7 @@ class UserIntegrationTest extends BaseIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(post("/auth/login").contentType(APPLICATION_JSON).content(loginRequest)).andExpect(status().isOk()).andExpect(jsonPath("$.token").exists());
+        mockMvc.perform(post("/api/v1/auth/login").contentType(APPLICATION_JSON).content(loginRequest)).andExpect(status().isOk()).andExpect(jsonPath("$.token").exists());
     }
 
     @Test

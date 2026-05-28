@@ -16,7 +16,7 @@ class AdminIntegrationTest extends BaseIntegrationTest {
     @Test
     void shouldGetAllUsersAsAdmin() throws Exception {
         // Given
-        User admin = createTestAdmin("testadmin", "testadmin@example.com", "admin123");
+        User admin = createTestAdmin();
         createTestUser("user1", "user1@example.com", "password123");
         createTestUser("user2", "user2@example.com", "password123");
         String token = generateToken(admin);
@@ -34,7 +34,7 @@ class AdminIntegrationTest extends BaseIntegrationTest {
     @Test
     void shouldCreateNewUserAsAdmin() throws Exception {
         // Given
-        User admin = createTestAdmin("testadmin", "testadmin@example.com", "admin123");
+        User admin = createTestAdmin();
         String token = generateToken(admin);
 
         String createUserRequest = """
@@ -89,7 +89,7 @@ class AdminIntegrationTest extends BaseIntegrationTest {
     @Test
     void shouldAllowAdminToViewAnyUserProfile() throws Exception {
         // Given
-        User admin = createTestAdmin("testadmin", "testadmin@example.com", "admin123");
+        User admin = createTestAdmin();
         User otherUser = createTestUser("otheruser", "other@example.com", "password123");
         String token = generateToken(admin);
 
@@ -105,7 +105,7 @@ class AdminIntegrationTest extends BaseIntegrationTest {
     @Test
     void shouldAllowAdminToUpdateAnyUser() throws Exception {
         // Given
-        User admin = createTestAdmin("testadmin", "testadmin@example.com", "admin123");
+        User admin = createTestAdmin();
         User otherUser = createTestUser("otheruser", "other@example.com", "password123");
         String token = generateToken(admin);
 
@@ -131,7 +131,7 @@ class AdminIntegrationTest extends BaseIntegrationTest {
     @Test
     void shouldAllowAdminToDeleteUser() throws Exception {
         // Given
-        User admin = createTestAdmin("testadmin", "testadmin@example.com", "admin123");
+        User admin = createTestAdmin();
         User userToDelete = createTestUser("todelete", "delete@example.com", "password123");
         String token = generateToken(admin);
 
@@ -162,7 +162,7 @@ class AdminIntegrationTest extends BaseIntegrationTest {
     @Test
     void shouldAllowAdminToUpdateUserRoles() throws Exception {
         // Given
-        User admin = createTestAdmin("testadmin", "testadmin@example.com", "admin123");
+        User admin = createTestAdmin();
         User regularUser = createTestUser("regularuser", "user@example.com", "password123");
         String token = generateToken(admin);
 
@@ -191,7 +191,7 @@ class AdminIntegrationTest extends BaseIntegrationTest {
     @Test
     void shouldAllowAdminToDisableUser() throws Exception {
         // Given
-        User admin = createTestAdmin("testadmin", "testadmin@example.com", "admin123");
+        User admin = createTestAdmin();
         User regularUser = createTestUser("regularuser", "user@example.com", "password123");
         String token = generateToken(admin);
 
@@ -296,7 +296,7 @@ class AdminIntegrationTest extends BaseIntegrationTest {
     @Test
     void shouldRejectDuplicateUsername() throws Exception {
         // Given
-        User admin = createTestAdmin("testadmin", "testadmin@example.com", "admin123");
+        User admin = createTestAdmin();
         createTestUser("existinguser", "existing@example.com", "password123");
         String token = generateToken(admin);
 
@@ -320,7 +320,7 @@ class AdminIntegrationTest extends BaseIntegrationTest {
     @Test
     void shouldRejectDuplicateEmail() throws Exception {
         // Given
-        User admin = createTestAdmin("testadmin", "testadmin@example.com", "admin123");
+        User admin = createTestAdmin();
         createTestUser("existinguser", "existing@example.com", "password123");
         String token = generateToken(admin);
 
@@ -346,7 +346,7 @@ class AdminIntegrationTest extends BaseIntegrationTest {
     @Test
     void shouldNotAllowDeletingLastAdmin() throws Exception {
         // Given - Only one admin exists (from DataLoader or test)
-        User admin = createTestAdmin("testadmin", "testadmin@example.com", "admin123");
+        User admin = createTestAdmin();
         String token = generateToken(admin);
 
         // When & Then - Try to delete self (last admin)
