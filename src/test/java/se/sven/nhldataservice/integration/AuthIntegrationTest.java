@@ -24,7 +24,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
             """;
 
         // When & Then
-        mockMvc.perform(post("/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(APPLICATION_JSON)
                         .content(loginRequest))
                 .andExpect(status().isOk())
@@ -45,7 +45,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
             """;
 
         // When & Then
-        mockMvc.perform(post("/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(APPLICATION_JSON)
                         .content(loginRequest))
                 .andExpect(status().isUnauthorized());
@@ -62,7 +62,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
             """;
 
         // When & Then
-        mockMvc.perform(post("/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(APPLICATION_JSON)
                         .content(loginRequest))
                 .andExpect(status().isUnauthorized());
@@ -80,7 +80,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         """;
 
         // When & Then
-        mockMvc.perform(post("/auth/register")
+        mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(APPLICATION_JSON)
                         .content(registerRequest))
                 .andExpect(status().isCreated())
@@ -95,7 +95,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         }
         """;
 
-        mockMvc.perform(post("/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(APPLICATION_JSON)
                         .content(loginRequest))
                 .andExpect(status().isOk())
@@ -116,7 +116,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         """;
 
         // When & Then
-        mockMvc.perform(post("/auth/register")
+        mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(APPLICATION_JSON)
                         .content(registerRequest))
                 .andExpect(status().isConflict())
@@ -137,7 +137,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         """;
 
         // When & Then
-        mockMvc.perform(post("/auth/register")
+        mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(APPLICATION_JSON)
                         .content(registerRequest))
                 .andExpect(status().isConflict())
@@ -159,7 +159,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         """;
 
         // When & Then
-        mockMvc.perform(post("/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(APPLICATION_JSON)
                         .content(loginRequest))
                 .andExpect(status().isUnauthorized());
@@ -188,7 +188,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         """;
 
         // When & Then
-        mockMvc.perform(post("/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(APPLICATION_JSON)
                         .content(loginRequest))
                 .andExpect(status().isBadRequest());
@@ -207,7 +207,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         """;
 
         // When & Then
-        mockMvc.perform(post("/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(APPLICATION_JSON)
                         .content(loginRequest))
                 .andExpect(status().isBadRequest());
@@ -223,7 +223,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         """;
 
         // When & Then
-        mockMvc.perform(post("/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(APPLICATION_JSON)
                         .content(loginRequest))
                 .andExpect(status().isBadRequest());
@@ -239,7 +239,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
         """;
 
         // When & Then
-        mockMvc.perform(post("/auth/register")
+        mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(APPLICATION_JSON)
                         .content(registerRequest))
                 .andExpect(status().isBadRequest());
