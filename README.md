@@ -5,7 +5,7 @@ A Spring Boot REST API that fetches NHL game data with database caching and role
 ![CI Pipeline](https://github.com/sven-0414/nhl-data-service/workflows/CI%20Pipeline/badge.svg)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=sven-0414_nhl-data-service&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=sven-0414_nhl-data-service)
 ![Java](https://img.shields.io/badge/Java-21-orange)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.4-green)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.6-green)
 
 ## Features
 
@@ -17,8 +17,8 @@ A Spring Boot REST API that fetches NHL game data with database caching and role
 
 ## Tech Stack
 
-- Spring Boot 3.4.4
-- Spring Security 6 (JWT + RBAC)
+- Spring Boot 4.0.6
+- Spring Security 7 (JWT + RBAC)
 - Spring Data JPA
 - PostgreSQL
 - Maven
@@ -51,14 +51,10 @@ A Spring Boot REST API that fetches NHL game data with database caching and role
    JWT_SECRET=your-generated-secret-here
    JWT_EXPIRATION=3600000
    ADMIN_PASSWORD=your-secure-admin-password
+   DB_PASSWORD=your-database-password
    ```
 
-4. **Set database password** (in Run Configuration or export)
-   ```bash
-   export DB_PASSWORD=your_password
-   ```
-
-5. **Run**
+4. **Run**
    ```bash
    ./mvnw spring-boot:run
    ```
@@ -80,7 +76,7 @@ export ADMIN_PASSWORD=your-secure-password
 
 **Register:**
 ```http
-POST /auth/register
+POST /api/v1/auth/register
 Content-Type: application/json
 
 {
@@ -92,7 +88,7 @@ Content-Type: application/json
 
 **Login:**
 ```http
-POST /auth/login
+POST /api/v1/auth/login
 Content-Type: application/json
 
 {

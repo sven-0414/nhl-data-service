@@ -22,7 +22,7 @@ import se.sven.nhldataservice.util.JwtUtil;
  */
 @Tag(name = "Authentication", description = "User authentication and registration")
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
 

@@ -1,8 +1,7 @@
 package se.sven.nhldataservice.integration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
@@ -15,7 +14,6 @@ import se.sven.nhldataservice.repository.UserRepository;
 import se.sven.nhldataservice.util.JwtUtil;
 
 import java.util.Set;
-
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
@@ -23,9 +21,6 @@ public abstract class BaseIntegrationTest {
 
     @Autowired
     protected MockMvc mockMvc;
-
-    @Autowired
-    protected ObjectMapper objectMapper;
 
     @Autowired
     protected UserRepository userRepository;
@@ -61,7 +56,7 @@ public abstract class BaseIntegrationTest {
     /**
      * Creates a test admin user with ADMIN role.
      */
-    protected User createTestAdmin(String username, String email, String password) {
+    protected User createTestAdmin() {
         Role adminRole = roleRepository.findByName(RoleName.ADMIN)
                 .orElseGet(() -> {
                     Role newRole = new Role();
@@ -70,9 +65,9 @@ public abstract class BaseIntegrationTest {
                 });
 
         User admin = new User();
-        admin.setUsername(username);
-        admin.setEmail(email);
-        admin.setPassword(passwordEncoder.encode(password));
+        admin.setUsername("testadmin");
+        admin.setEmail("testadmin@example.com");
+        admin.setPassword(passwordEncoder.encode("admin123"));
         admin.setRoles(Set.of(adminRole));
         return userRepository.save(admin);
     }
