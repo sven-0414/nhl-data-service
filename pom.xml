@@ -32,6 +32,11 @@
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.projectKey>sven-0414_nhl-data-service</sonar.projectKey>
         <postgresql.version>42.7.11</postgresql.version>
+        <sonar.coverage.exclusions>
+            **/config/SecurityConfig.java,
+            **/config/AppConfig.java,
+            **/config/TestSecurityConfig.java
+        </sonar.coverage.exclusions>
     </properties>
     <dependencies>
         <dependency>
